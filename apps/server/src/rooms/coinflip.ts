@@ -37,6 +37,7 @@ export class CoinFlip extends Room {
   state = new CoinFlipState();
   public delayedInterval: Delayed;
   private settleTime = 10
+  private isSettling = false;
   messages = {
     chat: validate(ChatSchema, (client, message) => {
       const chatMsg = new ChatMessage().assign({
@@ -106,16 +107,23 @@ export class CoinFlip extends Room {
     this.state.gameId = options.gameId || "0xdemo"
     this.state.isDemoMode = env.IS_DEMO_MODE
     await this.syncData()
+
+    // cron every 10s
+    this.clock.setInterval(async () => {
+      console.log(`[Cron] Checking settlement... (${this.state.bets.size} bets, isSettling: ${this.isSettling})`);
+      if (this.state.bets.size > 1 && !this.isSettling) {
+        console.log(`[Cron] Conditions met! Starting settlement for game: ${this.state.gameId}`);
+        await this.settleGame();
+      } else if (this.state.bets.size <= 1) {
+        // Silent or minimal log for empty room
+      } else if (this.isSettling) {
+        console.log(`[Cron] Settlement already in progress, skipping...`);
+      }
+    }, 1000 * 10);
   }
 
   async onJoin(client: Client, options: { user: string }) {
-    console.log("session", client.sessionId)
     await this.syncData()
-    if (this.state.bets.size > 1) {
-      this.clock.start()
-      //this will trigger base on the settle time
-      this.clock.setTimeout(() => this.settleGame(), this.settleTime);
-    }
     if (!env.IS_DEMO_MODE) {
       this.checkPlayer(options.user)
     } else {
@@ -240,9 +248,14 @@ export class CoinFlip extends Room {
     }
   }
   async settleGame() {
+    if (this.isSettling || this.state.bets.size < 2) {
+      if (this.state.bets.size < 2) console.log(`[Settle] Skipping: Not enough players (${this.state.bets.size})`);
+      return;
+    }
+    this.isSettling = true;
     console.log("booomm!");
     this.broadcast("settleStart", { timestamp: Date.now() });
-    this.broadcast("chat", { message: "Game is settling...", user: "Server" })
+    this.broadcast("chat", { message: "Game is settling...", user: "Server", dateTime: new Date().toISOString() })
     this.state.messages.push(new ChatMessage().assign({ message: "Game is settling...", user: "Server", dateTime: new Date().toISOString() }))
     if (this.state.messages.length > 50) this.state.messages.shift();
     try {
@@ -285,9 +298,9 @@ export class CoinFlip extends Room {
         this.clock.start()
         this.clock.setTimeout(() =>   // Broadcast the outcome
         {
-          const msg = { message: `Game settled! ${outcome === 1 ? "Heads" : "Tails"} wins!`, user: "Server" };
+          const msg = { message: `Game settled! ${outcome === 1 ? "Heads" : "Tails"} wins!`, user: "Server", dateTime: new Date().toISOString() };
           this.broadcast("chat", msg)
-          this.state.messages.push(new ChatMessage().assign({ ...msg, dateTime: new Date().toISOString() }))
+          this.state.messages.push(new ChatMessage().assign(msg))
           if (this.state.messages.length > 50) this.state.messages.shift();
           this.broadcast("settleOutcome", { outcome, gameId: currentGameId })
         }, 1000 * 5)
@@ -366,6 +379,8 @@ export class CoinFlip extends Room {
 
     } catch (err) {
       console.error("Failed to settle game:", err);
+    } finally {
+      this.isSettling = false;
     }
   }
 }

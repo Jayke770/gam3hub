@@ -94,7 +94,11 @@ export function ChatArea() {
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-primary">{truncate(msg.user)}</span>
                     <span className="text-[10px] text-muted-foreground font-medium">
-                      {msg?.dateTime ? dateFns.format(msg?.dateTime, "h:mm a") : "Just now"}
+                      {(() => {
+                        if (!msg?.dateTime) return "Just now";
+                        const d = new Date(msg.dateTime);
+                        return isNaN(d.getTime()) ? "Just now" : dateFns.format(d, "h:mm a");
+                      })()}
                     </span>
                   </div>
                   <span className="text-sm bg-muted/40 p-3 rounded-2xl rounded-tl-sm text-foreground/90 w-fit max-w-[85%]">
