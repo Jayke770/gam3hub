@@ -187,14 +187,20 @@ export function ChatAndBets(props: { isMobile: boolean }) {
             {activeTab === "bets" && (
               <div className="p-4 border-t border-border/50 bg-card/80 backdrop-blur-md shrink-0">
                 {isConnected ? (
-                    <Button
-                      type="button"
-                    onClick={() => setIsBetting(true)}
-                    size="lg"
-                    className="w-full group transition-all rounded-xl font-black text-sm cursor-pointer shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-[0.99]"
-                  >
-                    Place Bet <ChevronRight className="size-4 ml-1 group-hover:ml-2 transition-all" />
-                  </Button>
+                  (() => {
+                    const hasJoined = hexAddress ? betsArray.some(b => b.address.toLowerCase() === hexAddress.toLowerCase()) : false;
+                    return (
+                      <Button
+                        type="button"
+                        disabled={hasJoined}
+                        onClick={() => setIsBetting(true)}
+                        size="lg"
+                        className="w-full group transition-all rounded-xl font-black text-sm cursor-pointer shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed"
+                      >
+                        {hasJoined ? "Already Joined" : "Bet now!"} <ChevronRight className={`size-4 ml-1 transition-all ${!hasJoined && "group-hover:ml-2"}`} />
+                      </Button>
+                    );
+                  })()
                 ) : (
                       <Button
                         type="button"

@@ -33,7 +33,7 @@ import { motion } from "motion/react";
 import { JoinGameSchema } from "@workspace/shared/colysues/rooms";
 
 const formSchema = z.object({
-  amount: z.string().min(1, "Amount is required"),
+  amount: z.string(),
   side: z.enum(["Heads", "Tails"]).default("Heads"),
 });
 

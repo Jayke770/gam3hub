@@ -9,6 +9,7 @@ import { Badge } from "@workspace/ui/components/badge"
 import { Spinner } from "@workspace/ui/components/spinner"
 import { cn } from '@workspace/ui/lib/utils'
 import { useInterwovenKit } from "@initia/interwovenkit-react";
+import { toast } from "sonner";
 
 const context = createRoomContext<CoinFlipState>();
 const RoomProvider = context.RoomProvider;
@@ -26,6 +27,10 @@ function MessageHandler() {
     useRoomMessage("chat", (msg: { user: string; message: string; dateTime?: string }) => {
         console.log(msg)
         addMessage({ user: msg.user, message: msg.message, dateTime: msg.dateTime });
+    });
+
+    useRoomMessage("error", (msg: string) => {
+        toast.error(msg);
     });
 
     return null;

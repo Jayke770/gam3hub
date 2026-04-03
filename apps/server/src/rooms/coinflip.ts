@@ -44,9 +44,15 @@ export class CoinFlip extends Room {
     joinGame: validate(JoinGameSchema, async (client: Client, message) => {
       console.log("New bet: ", message)
       const gameIdNorm = this.state.gameId.toLowerCase();
+      const playerAddrLow = message.playerAddress.toLowerCase();
+
+      // Check if already in this game
+      if (this.state.bets.has(playerAddrLow)) {
+        client.send("error", "You have already joined this game");
+        return;
+      }
 
       if (env.IS_DEMO_MODE) {
-        const playerAddrLow = message.playerAddress.toLowerCase();
         const user = await db.query.users.findFirst({
           where: eq(users.address, playerAddrLow)
         });
@@ -96,7 +102,7 @@ export class CoinFlip extends Room {
   async onJoin(client: Client, options: { user: string }) {
     console.log("session", client.sessionId)
     await this.syncData()
-    if (this.state.playerCount > 1) {
+    if (this.state.bets.size > 1) {
       this.clock.start()
       //this will trigger base on the settle time
       this.clock.setTimeout(() => this.settleGame(), this.settleTime);
