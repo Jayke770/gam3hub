@@ -18,7 +18,7 @@ const useRoomState: <U = unknown>(selector?: (state: CoinFlipState) => U) => Sna
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const useRoomMessage: any = context.useRoomMessage;
 
-const gameClient = new Client("ws://localhost:2567")
+const gameClient = new Client(process.env.NEXT_PUBLIC_GAME_SERVER_URL || "ws://localhost:2567")
 
 
 function MessageHandler() {
@@ -44,13 +44,13 @@ function RoomStatus() {
         <div className="fixed top-2 left-2 z-50 flex items-center gap-2">
             <Badge
                 className={cn(
-                    room.isConnecting 
-                        ? "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300 animate-pulse" 
+                    !room.room?.state || room.isConnecting
+                        ? "bg-red-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300 animate-pulse"
                         : "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300"
                 )}
             >
-                {!room || room?.isConnecting ? <Spinner data-icon="inline-start" /> : null}
-                {!room || room?.isConnecting ? "Connecting..." : " Live"}
+                {!room?.room?.state || room?.isConnecting ? <Spinner data-icon="inline-start" /> : null}
+                {!room?.room?.state || room?.isConnecting ? "Connecting..." : " Live"}
             </Badge>
             {isDemoMode && (
                 <Badge variant="outline" className="bg-primary/20 text-primary border-primary/30 font-black tracking-widest text-[9px] uppercase">
