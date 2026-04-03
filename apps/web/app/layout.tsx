@@ -1,8 +1,22 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
+
+export const viewport: Viewport = {
+  themeColor: "#f3dec2",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+}
 
 export const metadata: Metadata = {
-  title: "GameHub",
-  description: "GameHub",
+  title: "Gam3Hub",
+  description: "The ultimate gaming destination. Provably fair games, instant settlements, and a seamless dApp experience.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Gam3Hub",
+  },
 }
 
 import { Geist, Geist_Mono, Instrument_Sans } from "next/font/google"

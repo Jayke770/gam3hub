@@ -42,7 +42,7 @@ export default function Page() {
             ctx.fillStyle = computed;
             return ctx.fillStyle; 
           }
-        } catch {}
+        } catch { /* Silent fail */ }
         return computed;
       };
 
