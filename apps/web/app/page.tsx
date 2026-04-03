@@ -76,11 +76,11 @@ export default function DashboardPage() {
       </header>
 
       {/* Hero Section (Simplified) */}
-      <div className="relative z-10 max-w-7xl mx-auto px-6 pt-12 pb-16">
+      <div className="relative z-10 max-w-7xl mx-auto px-2 pt-8 pb-14">
         {/* Hero content removed for a cleaner dashboard look */}
 
       {/* Game Browse Section */}
-      <div className="relative z-10 max-w-6xl mx-auto px-4 md:px-6 pb-24">
+        <div className="relative z-10 max-w-6xl mx-auto px-2 md:px-6 pb-24">
         {/* Featured Label */}
         <div className="flex items-center gap-4 mb-6 md:mb-10 overflow-hidden">
           <div className="h-px flex-1 bg-linear-to-r from-transparent via-border to-transparent" />
