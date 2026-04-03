@@ -89,10 +89,9 @@ export default function Page() {
     if (!isFlipping) return;
     setIsFlipping(false);
   };
-  console.log("Wallet connected: ", isConnected)
   return (
     <div className="flex h-svh w-full bg-background text-foreground overflow-hidden relative">
-      <HowlerMusic src="/assets/sounds/coinflip.mp3" className="absolute left-5 bottom-5 z-50 pointer-events-auto" />
+      <HowlerMusic src="/assets/sounds/coinflip.mp3" className="absolute left-3 bottom-8 z-50 pointer-events-auto" />
 
       {/* GAME ARENA */}
       <CoinArena

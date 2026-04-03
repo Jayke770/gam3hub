@@ -20,7 +20,7 @@ interface HowlerMusicProps {
  */
 export function HowlerMusic({
   src,
-  autoPlay = true,
+  autoPlay = false,
   loop = true,
   volume = 0.2,
   className,
@@ -79,7 +79,7 @@ export function HowlerMusic({
         size="icon"
         onClick={togglePlay}
         className={cn(
-          "rounded-full size-8 transition-all shrink-0",
+          "rounded-full size-8 transition-all shrink-0 cursor-pointer",
           isPlaying ? "bg-primary/20 text-primary shadow-[0_0_10px_-2px_var(--color-primary)]" : "text-zinc-500 hover:text-zinc-400"
         )}
       >
