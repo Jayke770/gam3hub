@@ -16,21 +16,19 @@ RUN bun install
 RUN bunx turbo run build --filter=server
 
 FROM base AS runner
+# Install PM2 globally as root
+RUN bun add -g pm2
+
 USER bun
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Copy only the compiled server files and necessary node_modules
+# Copy files as the 'bun' user
 COPY --from=builder --chown=bun:bun /app/apps/server/build ./apps/server/build
 COPY --from=builder --chown=bun:bun /app/packages/shared ./packages/shared
 COPY --from=builder --chown=bun:bun /app/node_modules ./node_modules
 COPY --from=builder --chown=bun:bun /app/package.json ./package.json
-
-# Copy PM2 config
 COPY --from=builder --chown=bun:bun /app/apps/server/ecosystem.config.cjs ./apps/server/ecosystem.config.cjs
-
-# Install PM2 globally
-RUN bun add -g pm2
 
 EXPOSE 2567
 # Run the server using PM2
