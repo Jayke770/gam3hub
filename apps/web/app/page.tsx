@@ -80,7 +80,7 @@ export default function DashboardPage() {
         {/* Hero content removed for a cleaner dashboard look */}
 
       {/* Game Browse Section */}
-      <div className="relative z-10 max-w-6xl mx-auto px-6 pb-24">
+      <div className="relative z-10 max-w-6xl mx-auto px-4 md:px-6 pb-24">
         {/* Featured Label */}
         <div className="flex items-center gap-4 mb-6 md:mb-10 overflow-hidden">
           <div className="h-px flex-1 bg-linear-to-r from-transparent via-border to-transparent" />
@@ -96,9 +96,9 @@ export default function DashboardPage() {
           opts={{ align: "start", loop: true }}
           className="w-full relative"
         >
-          <CarouselContent className="-ml-4 py-8 -my-8">
+          <CarouselContent className="-ml-3 md:-ml-4">
             {/* Mines Card */}
-            <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3">
+            <CarouselItem className="pl-3 md:pl-4 basis-[80%] md:basis-1/2 lg:basis-1/3">
               <GameCard 
                 title="Mines PVP"
                 description="Dodge bombs, find stars. High-stakes strategy."
@@ -109,7 +109,7 @@ export default function DashboardPage() {
             </CarouselItem>
 
             {/* CoinFlip Card */}
-            <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3">
+            <CarouselItem className="pl-3 md:pl-4 basis-[80%] md:basis-1/2 lg:basis-1/3">
               <GameCard 
                 title="Coin Flip"
                 description="50/50 chance. Instant win. double your stakes."
@@ -120,8 +120,8 @@ export default function DashboardPage() {
             </CarouselItem>
 
             {/* Placeholder Card 1 */}
-            <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3">
-               <div className="h-60 rounded-[28px] border border-border/50 bg-card/10 flex flex-col items-center justify-center gap-4 glass-morphism grayscale opacity-40">
+            <CarouselItem className="pl-3 md:pl-4 basis-[80%] md:basis-1/2 lg:basis-1/3">
+               <div className="h-40 md:h-60 rounded-[24px] md:rounded-[28px] border border-border/50 bg-card/10 flex flex-col items-center justify-center gap-4 glass-morphism grayscale opacity-40">
                   <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">More Games Coming Soon</span>
                </div>
             </CarouselItem>
@@ -158,9 +158,9 @@ function GameCard({ title, description, href, image, accent }: GameCardProps) {
   return (
     <Link href={href}>
       <motion.div 
-        whileHover={{ y: -8, scale: 1.02 }}
+        whileHover={{ y: -8 }}
         whileTap={{ scale: 0.98 }}
-        className={`group relative h-48 md:h-60 p-5 md:p-7 rounded-[24px] md:rounded-[32px] bg-linear-to-br ${accentColors[accent]} border border-border overflow-hidden shadow-2xl backdrop-blur-md`}
+        className={`group relative h-40 md:h-60 p-4 md:p-7 rounded-[24px] md:rounded-[32px] bg-linear-to-br ${accentColors[accent]} border border-border overflow-hidden shadow-2xl backdrop-blur-md`}
       >
         {/* Animated Background Graphic */}
         <div className="absolute top-[-5%] right-[-5%] opacity-5 group-hover:opacity-10 transition-opacity rotate-12">
@@ -169,20 +169,20 @@ function GameCard({ title, description, href, image, accent }: GameCardProps) {
 
         <div className="h-full flex flex-col justify-between">
           <div>
-            <div className={`w-10 md:w-14 h-10 md:h-14 rounded-xl md:rounded-2xl bg-card border border-border flex items-center justify-center mb-3 md:mb-4 shadow-lg overflow-hidden`}>
+            <div className={`w-9 md:w-14 h-9 md:h-14 rounded-lg md:rounded-2xl bg-card border border-border flex items-center justify-center mb-2.5 md:mb-4 shadow-lg overflow-hidden`}>
               <Image src={image} alt={title} width={50} height={50} className="object-cover scale-75 md:scale-100" />
             </div>
-            <h2 className="text-xl md:text-2xl font-black text-card-foreground uppercase italic tracking-tighter mb-1.5 md:mb-2 font-heading drop-shadow-md">
+            <h2 className="text-lg md:text-2xl font-black text-card-foreground uppercase italic tracking-tighter mb-1 md:mb-2 font-heading drop-shadow-md leading-none">
               {title}
             </h2>
-            <p className="text-muted-foreground text-[9px] md:text-[10px] font-medium max-w-[140px] md:max-w-[160px] leading-tight uppercase tracking-wider">
+            <p className="text-muted-foreground text-[8px] md:text-[10px] font-medium max-w-[120px] md:max-w-[160px] leading-tight uppercase tracking-wider">
               {description}
             </p>
           </div>
 
           <div className="flex items-end justify-end">
-            <div className="w-9 md:w-11 h-9 md:h-11 flex items-center justify-center bg-card border border-border rounded-full group-hover:bg-primary group-hover:text-background group-hover:scale-110 transition-all duration-300 shadow-lg">
-               <ArrowRight className="w-4 md:w-5 h-4 md:h-5" />
+            <div className="w-8 md:w-11 h-8 md:h-11 flex items-center justify-center bg-card border border-border rounded-full group-hover:bg-primary group-hover:text-background group-hover:scale-110 transition-all duration-300 shadow-lg">
+               <ArrowRight className="w-3.5 md:w-5 h-3.5 md:h-5" />
             </div>
           </div>
         </div>
