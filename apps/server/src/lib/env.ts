@@ -10,7 +10,7 @@ const envSchema = z.object({
     DATABASE_URL: z.string().url(),
     COINFLIP_CONTRACT_ADDRESS: z.string().startsWith('0x'),
     RPC_URL: z.string().url(),
-    IS_DEMO_MODE: z.string().optional().transform((v) => v === "true").default("false")
+    IS_DEMO_MODE: z.string().optional().transform((v) => v === "true").default(false)
 })
 
 export const env = envSchema.parse(process.env)

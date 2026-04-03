@@ -1,4 +1,4 @@
-import { createWalletClient, http, Hex, keccak256, encodePacked, createPublicClient, parseEther } from 'viem';
+import { createWalletClient, http, Hex, keccak256, encodePacked, createPublicClient, parseEther, decodeEventLog } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { env } from '../lib/env';
 import { GAM3HUB_ABI } from '../abis/Gam3Hub';
@@ -124,15 +124,13 @@ async function main() {
 
         // Log events
         let onChainOutcome: number | null = null;
-        const { decodeEventLog } = await import('viem');
-        
         for (const log of receipt.logs) {
             try {
                 const decoded = decodeEventLog({
                     abi: GAM3HUB_ABI,
                     data: log.data,
                     topics: log.topics,
-                });
+                }) as any;
                 
                 if (decoded.eventName === 'GameEnded') {
                     onChainOutcome = Number(decoded.args.outcomeSide);
