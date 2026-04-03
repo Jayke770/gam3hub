@@ -1,7 +1,7 @@
 "use client"
 import { type ReactNode } from "react";
 import { createRoomContext, type UseRoomResult, type Snapshot } from "@colyseus/react";
-import { Client, type SeatReservation } from "@colyseus/sdk";
+import type { SeatReservation } from "@colyseus/sdk";
 import { useMessageStore } from "@/hooks/useMessageStore"
 import { CoinFlipState } from '@workspace/shared/colysues/schema'
 import useSWR from 'swr'
@@ -10,6 +10,7 @@ import { Spinner } from "@workspace/ui/components/spinner"
 import { cn } from '@workspace/ui/lib/utils'
 import { useInterwovenKit } from "@initia/interwovenkit-react";
 import { toast } from "sonner";
+import { gameClient } from "@/lib/constants";
 
 const context = createRoomContext<CoinFlipState>();
 const RoomProvider = context.RoomProvider;
@@ -17,9 +18,6 @@ const useRoom: () => UseRoomResult<unknown, CoinFlipState> = context.useRoom;
 const useRoomState: <U = unknown>(selector?: (state: CoinFlipState) => U) => Snapshot<U> | undefined = context.useRoomState;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const useRoomMessage: any = context.useRoomMessage;
-
-const gameClient = new Client(process.env.NEXT_PUBLIC_GAME_SERVER_URL || "ws://localhost:2567")
-
 
 function MessageHandler() {
     const addMessage = useMessageStore((state) => state.addMessage);
