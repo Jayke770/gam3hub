@@ -24,10 +24,13 @@ COPY --from=builder --chown=bun:bun /app/apps/server/build ./apps/server/build
 COPY --from=builder --chown=bun:bun /app/packages/shared ./packages/shared
 COPY --from=builder --chown=bun:bun /app/node_modules ./node_modules
 COPY --from=builder --chown=bun:bun /app/package.json ./package.json
+# Copy PM2 config
+COPY --from=builder --chown=bun:bun /app/apps/server/ecosystem.config.cjs ./apps/server/ecosystem.config.cjs
 
-# If the server depends on compiled @workspace/shared, we might need to copy that too.
-# Turbo prune --docker prepares the 'full' directory which includes all workspace packages.
-# Let's check how '@workspace/shared' is built.
+# Install PM2 globally
+RUN bun add -g pm2
 
 EXPOSE 2567
-CMD ["bun", "run", "apps/server/build/index.js"]
+# Run the server using PM2
+WORKDIR /app/apps/server
+CMD ["pm2-runtime", "ecosystem.config.cjs"]
