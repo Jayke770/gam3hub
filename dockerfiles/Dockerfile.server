@@ -16,9 +16,6 @@ RUN bun install
 RUN bunx turbo run build --filter=server
 
 FROM base AS runner
-# Install PM2 globally as root
-RUN bun add -g pm2
-
 USER bun
 WORKDIR /app
 ENV NODE_ENV=production
@@ -28,11 +25,14 @@ COPY --from=builder --chown=bun:bun /app/apps/server/build ./apps/server/build
 COPY --from=builder --chown=bun:bun /app/packages/shared ./packages/shared
 COPY --from=builder --chown=bun:bun /app/node_modules ./node_modules
 COPY --from=builder --chown=bun:bun /app/package.json ./package.json
+
+# Copy ecosystem config from its location in the builder
 COPY --from=builder --chown=bun:bun /app/apps/server/ecosystem.config.cjs ./apps/server/ecosystem.config.cjs
 
 EXPOSE 2567
-# Reset entrypoint so PM2 can run directly
+# Reset entrypoint to use binary directly
 ENTRYPOINT []
-# Run the server using PM2
+
+# Run the server using the local pm2-runtime binary
 WORKDIR /app/apps/server
-CMD ["pm2-runtime", "ecosystem.config.cjs"]
+CMD ["../../node_modules/.bin/pm2-runtime", "ecosystem.config.cjs"]

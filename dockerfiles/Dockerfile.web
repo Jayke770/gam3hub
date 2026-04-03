@@ -20,7 +20,7 @@ USER bun
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Copy built app files and production dependencies
+# Copy built app files and production dependencies as the 'bun' user
 COPY --from=builder --chown=bun:bun /app/apps/web/.next ./apps/web/.next
 COPY --from=builder --chown=bun:bun /app/apps/web/public ./apps/web/public
 COPY --from=builder --chown=bun:bun /app/apps/web/package.json ./apps/web/package.json
@@ -31,6 +31,8 @@ COPY --from=builder --chown=bun:bun /app/node_modules ./node_modules
 COPY --from=builder --chown=bun:bun /app/package.json ./package.json
 
 EXPOSE 3000
+# Reset entrypoint to run next directly
+ENTRYPOINT []
 # Run next start from within the apps/web directory
 WORKDIR /app/apps/web
-CMD ["bun", "run", "next", "start"]
+CMD ["../../node_modules/.bin/next", "start"]
