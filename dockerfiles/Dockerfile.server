@@ -14,16 +14,17 @@ COPY --from=prepare /app/out/full/ .
 ENV NODE_ENV=production
 RUN bun install
 
-# Compile the server binary with all optimizations and bytecode
+# Compile the server into a standalone binary
+# Simplified flags to ensure compatibility with all CJS/ESM dependencies
 WORKDIR /app/apps/server
-RUN bun build ./src/index.ts --compile --minify --outfile server --minify-whitespace --minify-syntax --bytecode
+RUN bun build ./src/index.ts --compile --outfile server
 
 FROM base AS runner
 USER bun
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Copy only the compiled standalone 'server' binary
+# Copy the stable standalone binary
 COPY --from=builder --chown=bun:bun /app/apps/server/server ./server
 
 EXPOSE 2567
