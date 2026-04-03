@@ -1,4 +1,4 @@
-import { pgTable, text, boolean, integer, timestamp, numeric, bigint } from 'drizzle-orm/pg-core';
+import { pgTable, text, boolean, integer, timestamp, numeric, unique, uuid, serial } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 export const games = pgTable('games', {
@@ -17,15 +17,25 @@ export const games = pgTable('games', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
-export const bets = pgTable('bets', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  gameId: text('game_id').notNull().references(() => games.id),
-  playerAddress: text('player_address').notNull(),
-  side: integer('side').notNull(), // 0: tails, 1: heads
-  amount: numeric('amount').notNull(), // uint256
-  hasClaimed: boolean('has_claimed').notNull().default(false),
+export const users = pgTable('users', {
+  id: uuid().defaultRandom().primaryKey(),
+  address: text('address').unique(),
+  balance: numeric('balance', { mode: 'number' }).notNull().default(100),
   createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
+
+export const bets = pgTable('bets', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  gameId: text('game_id').notNull().references(() => games.id),
+  playerAddress: text('player_address').notNull().references(() => users.address),
+  side: integer('side').notNull(), // 0: tails, 1: heads
+  amount: numeric('amount', { mode: 'number' }).notNull(), 
+  hasClaimed: boolean('has_claimed').notNull().default(false),
+  isWon: boolean('is_won').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+
+}, (table) => [unique().on(table.gameId, table.playerAddress).nullsNotDistinct()])
 
 export const gamesRelations = relations(games, ({ many }) => ({
   bets: many(bets),
@@ -36,4 +46,12 @@ export const betsRelations = relations(bets, ({ one }) => ({
     fields: [bets.gameId],
     references: [games.id],
   }),
+  user: one(users, {
+    fields: [bets.playerAddress],
+    references: [users.address],
+  }),
+}));
+
+export const usersRelations = relations(users, ({ many }) => ({
+  bets: many(bets),
 }));

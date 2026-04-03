@@ -1,7 +1,7 @@
 import { createWalletClient, http, Hex, keccak256, encodePacked, createPublicClient } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { env } from '../lib/env';
-import { COINFLIP_ABI } from '../abis/Coinflip';
+import { GAM3HUB_ABI } from '../abis/Gam3Hub';
 import crypto from 'crypto';
 import { db } from '../models';
 import { games } from '../models/schema';
@@ -28,7 +28,7 @@ async function settleGame() {
     // 2. Get current active game ID from contract to confirm existence
     const currentGameId = await publicClient.readContract({
         address: env.COINFLIP_CONTRACT_ADDRESS as Hex,
-        abi: COINFLIP_ABI,
+        abi: GAM3HUB_ABI,
         functionName: 'currentGameId',
     } as any) as Hex;
 
@@ -40,7 +40,7 @@ async function settleGame() {
     console.log(`Active game found: ${currentGameId}`);
 
     // 3. Generate NEW server seed and commitment for the NEXT game
-    const nextServerSeed = "0x0000000000000000000000000000000000000000000000000000000000000000"
+    const nextServerSeed = "0x72f08129bbcba21bf61ec4c083c93cc0c546612d5cdcaec14601931ecb7eede3"
     const nextCommitment = keccak256(encodePacked(['bytes32'], [nextServerSeed]));
 
     console.log(`Next game seed: ${nextServerSeed}`);
@@ -50,7 +50,7 @@ async function settleGame() {
     console.log("Sending settleGame transaction...");
     const hash = await walletClient.writeContract({
         address: env.COINFLIP_CONTRACT_ADDRESS as Hex,
-        abi: COINFLIP_ABI,
+        abi: GAM3HUB_ABI,
         functionName: 'settleGame',
         args: [nextServerSeed, nextCommitment],
         account,
@@ -65,7 +65,7 @@ async function settleGame() {
     // 6. Get the new game ID (the contract logic updates currentGameId)
     const newGameId = await publicClient.readContract({
         address: env.COINFLIP_CONTRACT_ADDRESS as Hex,
-        abi: COINFLIP_ABI,
+        abi: GAM3HUB_ABI,
         functionName: 'currentGameId',
     } as any) as Hex;
 

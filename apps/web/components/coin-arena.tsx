@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
 import { ContactShadows, Environment } from "@react-three/drei";
 import { FallingStars } from "@/components/falling-stars";
@@ -9,7 +10,6 @@ interface CoinArenaProps {
   isFlipping: boolean;
   targetFace: "Heads" | "Tails" | null;
   onLanded: () => void;
-  onFlip: () => void;
   themeColors: {
     primary: string;
     primaryFg: string;
@@ -22,7 +22,6 @@ export function CoinArena({
   isFlipping,
   targetFace,
   onLanded,
-  onFlip,
   themeColors,
 }: CoinArenaProps) {
   return (
@@ -30,7 +29,7 @@ export function CoinArena({
       {/* Giant ambient background glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-radial from-primary/15 via-background to-background blur-[150px] -z-10 animate-in fade-in duration-1000" />
 
-      <div className="absolute inset-0 w-full h-full z-20 cursor-pointer" onClick={onFlip}>
+      <div className="absolute inset-0 w-full h-full z-20">
         <Canvas camera={{ position: [0, 2.5, 9.5], fov: 45 }}>
           <Environment preset="city" />
           <directionalLight position={[5, 12, 6]} intensity={1.8} castShadow />
@@ -38,12 +37,14 @@ export function CoinArena({
 
           <FallingStars color={themeColors.primary} />
 
-          <Coin3D
-            isFlipping={isFlipping}
-            targetFace={targetFace}
-            onLanded={onLanded}
-            colors={themeColors}
-          />
+          <Suspense fallback={null}>
+            <Coin3D
+              isFlipping={isFlipping}
+              targetFace={targetFace}
+              onLanded={onLanded}
+              colors={themeColors}
+            />
+          </Suspense>
 
           <ContactShadows
             position={[0, -2.5, 0]}

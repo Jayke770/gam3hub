@@ -16,10 +16,11 @@ import cors from 'cors'
 import { z } from 'zod'
 import { createPublicClient, http, Hex } from 'viem';
 import { signJoinGame } from "./lib/signJoinGame";
-import { COINFLIP_ABI } from "./abis/Coinflip";
+import { GAM3HUB_ABI } from "./abis/Gam3Hub";
 import { initializeGame } from "./lib/game";
 import { db } from "./models";
-import { bets } from "./models/schema";
+import { bets, users } from "./models/schema";
+import { eq } from "drizzle-orm";
 
 matchMaker.controller.exposedMethods = ["join", "joinById", "reconnect"]
 
@@ -41,53 +42,18 @@ const server = defineServer({
         }, async (ctx) => {
             const { user } = ctx.body;
             const rooms = await matchMaker.query({ name: "coinflip" })
+            const currentGameId = await publicClient.readContract({
+                address: env.COINFLIP_CONTRACT_ADDRESS as Hex,
+                abi: GAM3HUB_ABI,
+                functionName: 'currentGameId',
+            } as any) as Hex;
             if (rooms.length <= 0) {
-                const newRoom = await matchMaker.createRoom("coinflip", {})
+                const newRoom = await matchMaker.createRoom("coinflip", { gameId: currentGameId })
                 const seatReservation = await matchMaker.joinById(newRoom.roomId, { user })
                 return seatReservation
             }
             const seatReservation = await matchMaker.joinById(rooms[0].roomId, { user })
             return seatReservation
-        }),
-        joinGame: createEndpoint("/api/join-game", {
-            method: "POST",
-            body: z.object({
-                hash: z.string(),
-                user: z.string(),
-                amount: z.string(),
-                side: z.number()
-            })
-        }, async (ctx) => {
-            const { hash, user, amount, side } = ctx.body;
-            console.log(`Received transaction hash from user ${user}, verifying...`);
-
-            try {
-                // Wait for transaction confirmation
-                const receipt = await publicClient.waitForTransactionReceipt({
-                    hash: hash as Hex
-                });
-                console.log(`Transaction confirmed: ${receipt.transactionHash}`);
-
-                // Get current game ID
-                const currentGameId = await publicClient.readContract({
-                    address: env.COINFLIP_CONTRACT_ADDRESS as Hex,
-                    abi: COINFLIP_ABI,
-                    functionName: 'currentGameId',
-                } as any) as Hex;
-
-                // Save bet to DB
-                await db.insert(bets).values({
-                    gameId: currentGameId.toLowerCase(),
-                    playerAddress: user,
-                    side: side,
-                    amount: amount
-                });
-
-                return { hash };
-            } catch (error: any) {
-                console.error("Error verifying transaction:", error);
-                throw ctx.error(500, { message: "Failed to verify transaction: " + error.message });
-            }
         }),
         getServerSignature: createEndpoint("/api/get-signature", {
             method: "GET",
@@ -100,7 +66,7 @@ const server = defineServer({
                 const { user, side } = ctx.query;
                 let currentGameId = await publicClient.readContract({
                     address: env.COINFLIP_CONTRACT_ADDRESS as Hex,
-                    abi: COINFLIP_ABI,
+                    abi: GAM3HUB_ABI,
                     functionName: 'currentGameId',
                 } as any) as Hex;
 
@@ -118,7 +84,7 @@ const server = defineServer({
                     // Refetch the new currentGameId
                     currentGameId = await publicClient.readContract({
                         address: env.COINFLIP_CONTRACT_ADDRESS as Hex,
-                        abi: COINFLIP_ABI,
+                        abi: GAM3HUB_ABI,
                         functionName: 'currentGameId',
                     } as any) as Hex;
 
@@ -145,6 +111,37 @@ const server = defineServer({
             } catch (error: any) {
                 console.error("Error generating signature:", error);
                 throw ctx.error(500, { message: error.message || "Internal Server Error" });
+            }
+        }),
+
+        triggerSettle: createEndpoint("/api/settle", {
+            method: "POST"
+        }, async (ctx) => {
+            try {
+                const rooms = await matchMaker.query({ name: "coinflip" });
+                if (rooms.length > 0) {
+                    await matchMaker.remoteRoomCall(rooms[0].roomId, "settleGame", []);
+                    return { success: true, message: "Manual settlement triggered in room: " + rooms[0].roomId };
+                }
+                return { success: false, message: "No active room found" };
+            } catch (error: any) {
+                console.error("Manual settle error:", error);
+                throw ctx.error(500, { message: error.message });
+            }
+        }),
+        getUserBalance: createEndpoint("/api/users/:address/balance", {
+            method: "GET",
+            params: z.object({ address: z.string() })
+        }, async (ctx) => {
+            try {
+                const { address } = ctx.params;
+                const user = await db.query.users.findFirst({
+                    where: eq(users.address, address.toLowerCase())
+                });
+                return { balance: user?.balance || 0 };
+            } catch (error: any) {
+                console.error("Error fetching balance:", error);
+                throw ctx.error(500, { message: "Internal Server Error" });
             }
         }),
     }),

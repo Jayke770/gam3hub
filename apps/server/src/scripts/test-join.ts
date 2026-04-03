@@ -1,7 +1,7 @@
 import { createWalletClient, http, Hex, parseEther, createPublicClient } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { env } from '../lib/env';
-import { COINFLIP_ABI } from '../abis/Coinflip';
+import { GAM3HUB_ABI } from '../abis/Gam3Hub';
 
 const account = privateKeyToAccount(env.ADMIN_PRIVATE_KEY as Hex);
 
@@ -22,7 +22,7 @@ async function testJoin() {
     // 1. Get current active game
     const currentGameId = await publicClient.readContract({
         address: env.COINFLIP_CONTRACT_ADDRESS as Hex,
-        abi: COINFLIP_ABI,
+        abi: GAM3HUB_ABI,
         functionName: 'currentGameId',
     } as any) as Hex;
 
@@ -53,7 +53,7 @@ async function testJoin() {
     try {
         const hash = await walletClient.writeContract({
             address: env.COINFLIP_CONTRACT_ADDRESS as Hex,
-            abi: COINFLIP_ABI,
+            abi: GAM3HUB_ABI,
             functionName: 'joinGame',
             args: [1, signature], // 1 = Heads
             value: parseEther("0.1"),

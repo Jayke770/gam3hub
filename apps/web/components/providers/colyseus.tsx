@@ -33,12 +33,26 @@ function MessageHandler() {
 
 function RoomStatus() {
     const room = useRoom();
+    const isDemoMode = room?.room?.state?.isDemoMode;
+
     return (
-        <Badge
-            className={cn("fixed top-2 left-2 z-50", room.isConnecting ? "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300 animate-pulse" : "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300")}>
-            {!room || room?.isConnecting && <Spinner data-icon="inline-start" />}
-            {!room || room?.isConnecting ? "Connecting..." : " Live"}
-        </Badge>
+        <div className="fixed top-2 left-2 z-50 flex items-center gap-2">
+            <Badge
+                className={cn(
+                    room.isConnecting 
+                        ? "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300 animate-pulse" 
+                        : "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300"
+                )}
+            >
+                {!room || room?.isConnecting ? <Spinner data-icon="inline-start" /> : null}
+                {!room || room?.isConnecting ? "Connecting..." : " Live"}
+            </Badge>
+            {isDemoMode && (
+                <Badge variant="outline" className="bg-primary/20 text-primary border-primary/30 font-black tracking-widest text-[9px] uppercase">
+                    Demo
+                </Badge>
+            )}
+        </div>
     )
 }
 

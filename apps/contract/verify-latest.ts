@@ -6,7 +6,7 @@ async function verify() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            address: "0x704BdA6Ec81767B34F5E340C5cEaB64C08980ccE",
+            address: "0x02c6e02469d7e94107e09f8b34fec44f1f114fe8",
             compiler: "v0.8.24+commit.e11b9ed9",
             evm: "paris",
             optimization: {

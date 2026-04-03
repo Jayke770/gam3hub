@@ -35,18 +35,25 @@ export function ChatArea() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [nextChatAt, setNextChatAt] = useState<number>(0);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
+
+  // Update cooldown timer every second
+  useEffect(() => {
+    if (nextChatAt === 0) return;
+    
+    const interval = setInterval(() => {
+      const remaining = Math.max(0, Math.ceil((nextChatAt - Date.now()) / 1000));
+      setCooldownSeconds(remaining);
+      if (remaining === 0) setNextChatAt(0);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [nextChatAt]);
 
   const next = async () => {
     setIsLoading(true);
-
-    /**
-     * Simulate a network request
-     */
     await new Promise((resolve) => setTimeout(resolve, 500));
-
-    // Here you would normally fetch more messages and prepend them 
-    // to your store/state. For now we just simulate it's done.
-
     setHasMore(false);
     setIsLoading(false);
   };
@@ -63,11 +70,15 @@ export function ChatArea() {
   }, [chat]);
 
   const onSubmit = (data: FormValues) => {
-    console.log(data)
+    if (Date.now() < nextChatAt) return;
+
     room?.send("chat", {
       message: data.message,
       user: userWalletAddress || "0x0...",
     });
+    
+    setNextChatAt(Date.now() + 30000); // 30s rate limit
+    setCooldownSeconds(30);
     form.reset();
   };
 
@@ -75,30 +86,36 @@ export function ChatArea() {
     <div className="flex flex-col h-full overflow-hidden">
       {/* Chat Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-2 custom-scrollbar flex flex-col">
-        <div className="mt-auto space-y-1">
-          <InfiniteScroll hasMore={hasMore} isLoading={isLoading} next={next}>
-            {chat.map((msg) => (
-              <div key={msg.id} className="flex flex-col gap-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-primary">{truncate(msg.user)}</span>
-
-                  <span className="text-[10px] text-muted-foreground font-medium">
-                    {msg?.dateTime ? dateFns.format(msg?.dateTime, "h:mm a") : "Just now"}
+        {chat.length > 0 ? (
+          <div className="mt-auto space-y-1">
+            <InfiniteScroll hasMore={hasMore} isLoading={isLoading} next={next}>
+              {chat.map((msg) => (
+                <div key={msg.id} className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-primary">{truncate(msg.user)}</span>
+                    <span className="text-[10px] text-muted-foreground font-medium">
+                      {msg?.dateTime ? dateFns.format(msg?.dateTime, "h:mm a") : "Just now"}
+                    </span>
+                  </div>
+                  <span className="text-sm bg-muted/40 p-3 rounded-2xl rounded-tl-sm text-foreground/90 w-fit max-w-[85%]">
+                    {msg.message}
                   </span>
                 </div>
-                <span className="text-sm bg-muted/40 p-3 rounded-2xl rounded-tl-sm text-foreground/90 w-fit max-w-[85%]">
-                  {msg.message}
-                </span>
+              ))}
+            </InfiniteScroll>
+            {isLoading && (
+              <div className="flex items-center justify-center py-2">
+                <Loader2 className="size-4 animate-spin text-muted-foreground" />
               </div>
-            ))}
-          </InfiniteScroll>
-          {isLoading && (
-            <div className="flex items-center justify-center py-2">
-              <Loader2 className="size-4 animate-spin text-muted-foreground" />
-            </div>
-          )}
-          <div ref={chatEndRef} />
-        </div>
+            )}
+            <div ref={chatEndRef} />
+          </div>
+        ) : (
+          <div className="h-full flex flex-col items-center justify-center opacity-30 gap-2">
+            <span className="text-sm font-bold tracking-widest uppercase">No messages</span>
+            <span className="text-[10px] font-medium">Say something to start the conversation!</span>
+          </div>
+        )}
       </div>
 
       {/* Chat Input */}
@@ -109,7 +126,8 @@ export function ChatArea() {
               <InputGroup>
                 <InputGroupTextarea
                   {...form.register("message")}
-                  placeholder="Type a message..."
+                  placeholder={cooldownSeconds > 0 ? `Wait ${cooldownSeconds}s...` : "Type a message..."}
+                  disabled={cooldownSeconds > 0}
                   aria-label="Chat message"
                   aria-invalid={!!form.formState.errors.message}
                   onKeyDown={(e) => {
@@ -123,9 +141,14 @@ export function ChatArea() {
                   <Button
                     type="submit"
                     variant="ghost"
+                    disabled={cooldownSeconds > 0}
                     className="text-primary hover:text-primary/80 cursor-pointer rounded-full"
                   >
-                    <Send className="size-5" data-icon="inline-start" />
+                    {cooldownSeconds > 0 ? (
+                      <span className="text-[10px] font-black">{cooldownSeconds}</span>
+                    ) : (
+                      <Send className="size-5" />
+                    )}
                   </Button>
                 </InputGroupAddon>
               </InputGroup>

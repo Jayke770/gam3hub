@@ -24,29 +24,31 @@ import { parseEther, Hex, encodeFunctionData } from "viem";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { COINFLIP_ABI } from "@/lib/abis/Coinflip";
+import { GAM3HUB_ABI } from "@/lib/abis/Gam3Hub";
 import { COINFLIP_CONTRACT_ADDRESS, gameClient, TARGET_CHAIN_ID, BECH32_CHAIN_ID } from "@/lib/constants";
+import { useRoom } from "@/components/providers/colyseus";
+import { useUserBalance } from "@/hooks/use-user-balance";
 import { ArrowLeft, Coins } from "lucide-react";
 import { motion } from "motion/react";
+import { JoinGameSchema } from "@workspace/shared/colysues/rooms";
 
 const formSchema = z.object({
-  amount: z.string().min(1, "Amount is required").refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
-    message: "Amount must be greater than 0",
-  }),
-  side: z.enum(["Heads", "Tails"], {
-    required_error: "Please select a side",
-  }),
+  amount: z.string().min(1, "Amount is required"),
+  side: z.enum(["Heads", "Tails"]).default("Heads"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
 interface PlaceBetFormProps {
-  onBetPlaced: (amount: string, side: "Heads" | "Tails") => void;
+  onBetPlaced: (data: z.infer<typeof JoinGameSchema>) => void;
   onCancel: () => void;
 }
 
 export function PlaceBetForm({ onBetPlaced, onCancel }: PlaceBetFormProps) {
+  const { room } = useRoom();
+  const isDemoMode = room?.state?.isDemoMode;
   const { isConnected, hexAddress: userWalletAddress, initiaAddress, requestTxBlock } = useInterwovenKit();
+  const { balance: demoBalance, mutate: refreshDemoBalance } = useUserBalance(userWalletAddress);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -62,6 +64,10 @@ export function PlaceBetForm({ onBetPlaced, onCancel }: PlaceBetFormProps) {
   const evmInitAsset = initAssetGroup?.assets?.find((a) => a.denom.startsWith("evm"));
 
   const handleMaxAmount = () => {
+    if (isDemoMode) {
+      form.setValue("amount", demoBalance.toString(), { shouldValidate: true });
+      return;
+    }
     if (evmInitAsset) {
       const roundedAmount = Math.floor(Number(evmInitAsset.quantity) * 100) / 100;
       form.setValue("amount", roundedAmount.toString(), { shouldValidate: true });
@@ -69,74 +75,85 @@ export function PlaceBetForm({ onBetPlaced, onCancel }: PlaceBetFormProps) {
   };
 
   const onSubmit = async (data: FormValues) => {
-    if (!userWalletAddress || !publicClient || !initiaAddress) return;
+    if (!userWalletAddress || !publicClient || (!initiaAddress && !isDemoMode)) return;
 
-    const toastId = toast.loading("Processing transaction...", {
+    const toastId = toast.loading(isDemoMode ? "Placing demo bet..." : "Processing transaction...", {
       description: `Betting ${data.amount} INIT on ${data.side}`,
     });
 
     try {
-      if (typeof window !== "undefined") {
-        await switchChainAsync({ chainId: TARGET_CHAIN_ID });
-      }
-
       const sideInt = data.side === "Heads" ? 1 : 0;
 
-      const response = await gameClient.http.get("/api/get-signature", {
-        query: {
-          user: userWalletAddress,
-          side: sideInt.toString()
+      if (!isDemoMode) {
+        if (typeof window !== "undefined") {
+          await switchChainAsync({ chainId: TARGET_CHAIN_ID });
         }
-      });
 
-      const signatureData = response.data as {
-        signature: Hex,
-        currentGameId: Hex
-      };
-
-      const dataEncoded = encodeFunctionData({
-        abi: COINFLIP_ABI,
-        functionName: 'joinGame',
-        args: [sideInt, signatureData.signature],
-      });
-
-      const txResponse = await requestTxBlock({
-        chainId: BECH32_CHAIN_ID,
-        messages: [
-          {
-            typeUrl: "/minievm.evm.v1.MsgCall",
-            value: {
-              sender: initiaAddress.toLowerCase(),
-              contractAddr: COINFLIP_CONTRACT_ADDRESS,
-              input: dataEncoded,
-              value: parseEther(data.amount).toString(),
-              accessList: [],
-              authList: [],
-            }
+        const response = await gameClient.http.get("/api/get-signature", {
+          query: {
+            user: userWalletAddress,
+            side: sideInt.toString()
           }
-        ]
-      });
+        });
 
-      const hash = txResponse.transactionHash as Hex;
+        const signatureData = response.data as {
+          signature: Hex,
+          currentGameId: Hex
+        };
 
-      toast.success("Transaction Submitted!", {
-        id: toastId,
-        description: (
-          <div className="flex flex-col gap-1">
-            <span className="text-xs text-muted-foreground font-sans">Tx Hash:</span>
-            <pre className="w-full overflow-x-auto rounded bg-muted/40 p-2 text-[10px] font-mono">
-              <code>{hash}</code>
-            </pre>
-          </div>
-        ),
-      });
+        const dataEncoded = encodeFunctionData({
+          abi: GAM3HUB_ABI,
+          functionName: 'joinGame',
+          args: [sideInt, signatureData.signature],
+        });
 
-      onBetPlaced(data.amount, data.side);
+        const txResponse = await requestTxBlock({
+          chainId: BECH32_CHAIN_ID,
+          messages: [
+            {
+              typeUrl: "/minievm.evm.v1.MsgCall",
+              value: {
+                sender: initiaAddress!.toLowerCase(),
+                contractAddr: COINFLIP_CONTRACT_ADDRESS,
+                input: dataEncoded,
+                value: parseEther(data.amount).toString(),
+                accessList: [],
+                authList: [],
+              }
+            }
+          ]
+        });
+
+        const hash = txResponse.transactionHash as Hex;
+
+        toast.success("Transaction Submitted!", {
+          id: toastId,
+          description: (
+            <div className="flex flex-col gap-1">
+              <span className="text-xs text-muted-foreground font-sans">Tx Hash:</span>
+              <pre className="w-full overflow-x-auto rounded bg-muted/40 p-2 text-[10px] font-mono">
+                <code>{hash}</code>
+              </pre>
+            </div>
+          ),
+        });
+      } else {
+        // Simulate delay for demo
+        await new Promise(r => setTimeout(r, 1000));
+        await refreshDemoBalance();
+        toast.success("Demo Bet Placed!", {
+          id: toastId,
+          description: "No blockchain transaction required in Demo Mode.",
+        });
+      }
+
+      onBetPlaced({ playerAddress: userWalletAddress, amount: Number(data.amount), side: sideInt as 0 | 1 });
       form.reset();
       onCancel();
-    } catch (error: any) {
+    } catch (err: unknown) {
+      const error = err as Error;
       console.error("Error placing bet:", error);
-      toast.error("Transaction Failed", {
+      toast.error(isDemoMode ? "Demo Bet Failed" : "Transaction Failed", {
         id: toastId,
         description: error.message || "An unexpected error occurred",
       });
@@ -155,10 +172,17 @@ export function PlaceBetForm({ onBetPlaced, onCancel }: PlaceBetFormProps) {
           <ArrowLeft className="size-4" />
         </Button>
         <div className="flex flex-col">
-          <h2 className="text-lg font-black flex items-center gap-2 tracking-tight">
-            <Coins className="size-4 text-primary" />
-            Place Bet
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-black flex items-center gap-2 tracking-tight">
+              <Coins className="size-4 text-primary" />
+              Place Bet
+            </h2>
+            {isDemoMode && (
+              <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-black tracking-widest uppercase border border-primary/30">
+                Demo Mode
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -179,7 +203,7 @@ export function PlaceBetForm({ onBetPlaced, onCancel }: PlaceBetFormProps) {
                         disabled={isLoading}
                         className="text-[9px] font-bold text-primary hover:underline cursor-pointer uppercase opacity-70 hover:opacity-100 disabled:opacity-30"
                       >
-                        {isLoading ? "..." : `Max: ${parseFloat(evmInitAsset?.quantity || "0").toFixed(2)}`}
+                        {isLoading ? "..." : `Max: ${isDemoMode ? demoBalance : parseFloat(evmInitAsset?.quantity || "0").toFixed(2)}`}
                       </button>
                     )}
                   </div>

@@ -1,7 +1,7 @@
 import { createWalletClient, http, Hex, keccak256, encodePacked, createPublicClient } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { env } from './env';
-import { COINFLIP_ABI } from '../abis/Coinflip';
+import { GAM3HUB_ABI } from '../abis/Gam3Hub';
 import crypto from 'crypto';
 import { db } from '../models';
 import { games } from '../models/schema';
@@ -29,7 +29,7 @@ export async function initializeGame() {
     // 3. Call createGame on contract
     const hash = await walletClient.writeContract({
         address: env.COINFLIP_CONTRACT_ADDRESS as Hex,
-        abi: COINFLIP_ABI,
+        abi: GAM3HUB_ABI,
         functionName: 'createGame',
         args: [commitment],
         account,
@@ -45,7 +45,7 @@ export async function initializeGame() {
 
     const currentGameId = await publicClient.readContract({
         address: env.COINFLIP_CONTRACT_ADDRESS as Hex,
-        abi: COINFLIP_ABI,
+        abi: GAM3HUB_ABI,
         functionName: 'currentGameId',
     } as any) as Hex;
 

@@ -4,20 +4,17 @@ import { useState, useEffect } from "react";
 import { ChatAndBets } from "@/components/chat-and-bets";
 import { CoinArena } from "@/components/coin-arena";
 import { Button } from "@workspace/ui/components/button";
-import { Drawer, DrawerTrigger, DrawerContent, DrawerHeader, DrawerTitle } from "@workspace/ui/components/drawer";
+import { Drawer, DrawerTrigger, DrawerContent } from "@workspace/ui/components/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useInterwovenKit } from "@initia/interwovenkit-react";
-import { Wallet } from "lucide-react";
 import { HowlerMusic } from "@/components/howler-music";
-import { useChainId, useSendTransaction, useSwitchChain } from "wagmi";
+import { useRoomMessage } from "@/components/providers/colyseus";
+import { toast } from "sonner";
 
 
 export default function Page() { 
   const isMobile = useIsMobile();
-  const { openWallet, isConnected } = useInterwovenKit()
-  const chainId = useChainId()
-  const { mutate: switchChain } = useSwitchChain()
-  const { mutate: sendTransaction, error } = useSendTransaction()
+  const { isConnected } = useInterwovenKit()
   const [isFlipping, setIsFlipping] = useState(false);
   const [targetFace, setTargetFace] = useState<"Heads" | "Tails" | null>(null);
   const [themeColors, setThemeColors] = useState({
@@ -35,7 +32,18 @@ export default function Page() {
 
       const getRgb = (cssVar: string) => {
         div.style.color = `oklch(var(${cssVar}))`;
-        return getComputedStyle(div).color;
+        const computed = getComputedStyle(div).color;
+        
+        // Convert to absolute color (hex or rgb) via standard browser behavior
+        try {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.fillStyle = computed;
+            return ctx.fillStyle; 
+          }
+        } catch {}
+        return computed;
       };
 
       setThemeColors({
@@ -54,19 +62,34 @@ export default function Page() {
 
     return () => observer.disconnect();
   }, []);
-  const flipCoin = () => {
-    if (isFlipping) return;
+
+  useRoomMessage("settleStart", () => {
+    toast("The coin is flipping! ⏳", {
+      description: "Waiting for the secure outcome from the blockchain...",
+    });
+  // Start continuous spinning!
+    setIsFlipping(true);
+    setTargetFace(null);
+  });
+
+  useRoomMessage("settleOutcome", (message: { outcome: number; gameId: string }) => {
+    // Trigger the 3D coin jump arc and reveal
+    const isHeads = message.outcome === 1;
+    setTargetFace(isHeads ? "Heads" : "Tails");
     setIsFlipping(true);
 
-    const isHeads = Math.random() > 0.5;
-    setTargetFace(isHeads ? "Heads" : "Tails");
-  };
+    toast.success(`Coin landed on ${isHeads ? "Heads" : "Tails"}! 🪙`, {
+      description: "Winners are being credited...",
+    });
+  });
+
+  // flipCoin manual debug function removed since we now rely exclusively on server broadcasts
 
   const handleLanded = () => {
     if (!isFlipping) return;
     setIsFlipping(false);
   };
-  console.log(error)
+  console.log("Wallet connected: ", isConnected)
   return (
     <div className="flex h-svh w-full bg-background text-foreground overflow-hidden relative">
       <HowlerMusic src="/assets/sounds/coinflip.mp3" className="absolute left-2 bottom-2 z-50 pointer-events-auto" />
@@ -76,7 +99,6 @@ export default function Page() {
         isFlipping={isFlipping}
         targetFace={targetFace}
         onLanded={handleLanded}
-        onFlip={flipCoin}
         themeColors={themeColors}
       />
 
@@ -89,16 +111,6 @@ export default function Page() {
               </Button>
             </DrawerTrigger>
             <DrawerContent className="h-[80svh] px-0 border-t-0">
-              <DrawerHeader className="py-2!">
-                <div className=" flex justify-between items-center">
-                  <DrawerTitle className="text-xl font-black bg-clip-text text-transparent bg-linear-to-r from-primary to-primary/60 drop-shadow-sm">Coinflip</DrawerTitle>
-                  {isConnected && (
-                    <Button onClick={openWallet} size={"icon"} variant={"ghost"} className=" cursor-pointer rounded-full">
-                      <Wallet />
-                    </Button>
-                  )}
-                </div>
-              </DrawerHeader>
               <div className="flex-1 overflow-hidden w-full h-full flex flex-col mt-2">
                 <ChatAndBets isMobile={isMobile} />
               </div>

@@ -22,27 +22,25 @@ export function Coin3D({ isFlipping, targetFace, onLanded }: Coin3DProps) {
 
   // Animation state
   const rotationX = useRef(0);
+  const rotationY = useRef(0.4); 
   const startRot = useRef(0);
   const targetRot = useRef(0);
-  const flipStartTime = useRef(0);
-  const dur = 2200;
+  const dur = 1500; 
 
-  // Physical Gold Materials mimicking a real minted coin
   const materials = useMemo(() => {
     return {
-      // Rougher inner face
       body: new THREE.MeshStandardMaterial({
         color: "#d4af37",
         metalness: 0.8,
-        roughness: 0.35
+        roughness: 0.4
       }),
-      // Highly polished outer rim and text embossing
       polished: new THREE.MeshStandardMaterial({
-        color: "#fde047",
+        color: "#ffd700", // Vibrant Bright Gold
         metalness: 1.0,
-        roughness: 0.1
+        roughness: 0.05,
+        emissive: "#ffb800", // Orange-Gold emissive
+        emissiveIntensity: 0.4 // Stronger internal glow for visibility
       }),
-      // Slightly oxidized edge/base
       base: new THREE.MeshStandardMaterial({
         color: "#b48c22",
         metalness: 0.9,
@@ -51,7 +49,6 @@ export function Coin3D({ isFlipping, targetFace, onLanded }: Coin3DProps) {
     };
   }, []);
 
-  // Ornamental border stars (24 dots around the rim)
   const stars = useMemo(() => {
     const arr: [number, number][] = [];
     for (let i = 0; i < 24; i++) {
@@ -61,169 +58,136 @@ export function Coin3D({ isFlipping, targetFace, onLanded }: Coin3DProps) {
     return arr;
   }, []);
 
-  // React to flip triggers
+  const landingStartTime = useRef(0);
+  const wasWaiting = useRef(false);
+
   useEffect(() => {
-    if (isFlipping && targetFace) {
+    if (isFlipping && !targetFace) {
+      wasWaiting.current = true;
+    }
+
+    if (isFlipping && targetFace && wasWaiting.current) {
       startRot.current = rotationX.current;
       const base = Math.ceil(rotationX.current / (Math.PI * 2)) * (Math.PI * 2);
-      const spins = 5 * Math.PI * 2;
-      targetRot.current = base + spins + (targetFace === "Tails" ? Math.PI : 0);
-      flipStartTime.current = performance.now();
+      const extraSpins = 4 * Math.PI * 2;
+      targetRot.current = base + extraSpins + (targetFace === "Tails" ? Math.PI : 0);
+      landingStartTime.current = performance.now();
+      wasWaiting.current = false;
+    } else if (isFlipping && targetFace && !wasWaiting.current && landingStartTime.current === 0) {
+      startRot.current = rotationX.current;
+      const base = Math.ceil(rotationX.current / (Math.PI * 2)) * (Math.PI * 2);
+      targetRot.current = base + 5 * Math.PI * 2 + (targetFace === "Tails" ? Math.PI : 0);
+      landingStartTime.current = performance.now();
+    }
+
+    if (!isFlipping) {
+      landingStartTime.current = 0;
+      wasWaiting.current = false;
     }
   }, [isFlipping, targetFace]);
 
-  useFrame(() => {
+  useFrame((state, delta) => {
     if (!groupRef.current) return;
 
     if (isFlipping) {
       const now = performance.now();
-      let progress = (now - flipStartTime.current) / dur;
-      if (progress > 1) progress = 1;
-
-      // Cubic ease out rotation
-      const easeProgress = 1 - Math.pow(1 - progress, 3);
-      rotationX.current = startRot.current + (targetRot.current - startRot.current) * easeProgress;
-      groupRef.current.rotation.x = rotationX.current;
-
-      // Parabolic Jump Arc with High-Fidelity Bounce
-      const mainFlipProgress = Math.min(progress / 0.85, 1);
-      const jumpHeight = 1.4;
-      
-      let y = 0;
-      if (progress < 0.85) {
-        // Initial high-velocity flip arc
-        y = Math.sin(mainFlipProgress * Math.PI) * jumpHeight;
+      if (!targetFace) {
+        rotationX.current += delta * 12;
+        rotationY.current = THREE.MathUtils.lerp(rotationY.current, 0.4, 0.1);
+        groupRef.current.rotation.set(rotationX.current, rotationY.current, 0);
+        groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, 0.8, 0.1);
       } else {
-        // Landing bounce logic
-        const bounceP = (progress - 0.85) / 0.15;
-        // Two diminishing bounces
-        y = Math.abs(Math.sin(bounceP * Math.PI * 2.5)) * 0.12 * (1 - bounceP);
-        
-        // Add a slight landing wobble (tilt)
-        const wobble = Math.sin(bounceP * Math.PI * 4) * 0.1 * (1 - bounceP);
-        groupRef.current.rotation.z = wobble;
-        groupRef.current.rotation.y = wobble * 0.5;
-      }
-      
-      groupRef.current.position.y = y;
-
-      if (progress === 1) {
-        onLanded();
+        if (landingStartTime.current === 0) return;
+        let progress = (now - landingStartTime.current) / dur;
+        if (progress > 1) progress = 1;
+        const easeProgress = 1 - Math.pow(1 - progress, 3);
+        rotationX.current = startRot.current + (targetRot.current - startRot.current) * easeProgress;
+        rotationY.current = THREE.MathUtils.lerp(rotationY.current, 0.4, 0.05);
+        groupRef.current.rotation.set(rotationX.current, rotationY.current, 0);
+        groupRef.current.position.y = 0.8 * (1 - easeProgress);
+        if (progress === 1) onLanded();
       }
     } else {
-      // Keep rotation locked after landing but reset wobble gradually
-      groupRef.current.rotation.x = rotationX.current;
-      groupRef.current.rotation.z = THREE.MathUtils.lerp(groupRef.current.rotation.z, 0, 0.1);
-      groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, 0, 0.1);
+      rotationY.current += delta * 0.4;
+      groupRef.current.rotation.set(rotationX.current, rotationY.current, 0);
+      groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, 0, 0.1);
     }
   });
 
-
   return (
     <group ref={groupRef}>
-      {/* Root transform to angle the coin perfectly */}
-      <group rotation={[Math.PI / 2, 0, 0]} scale={0.45}>
+      <group rotation={[Math.PI / 2, 0, 0]} scale={0.55}>
 
-        {/* Core Coin Wedge / Edge Ribbing Area */}
-        <mesh castShadow receiveShadow geometry={new THREE.CylinderGeometry(1.95, 1.95, 0.38, 64)}>
+        {/* Rim Edge Mesh - Slightly shrunk Y to prevent Z-fighting with faces */}
+        <mesh castShadow receiveShadow geometry={new THREE.CylinderGeometry(1.95, 1.95, 0.48, 64)}>
           <primitive object={materials.base} attach="material" />
         </mesh>
 
-        {/* --- FRONT BASE (HEADS) --- */}
-        <mesh receiveShadow position={[0, 0.191, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <circleGeometry args={[1.9, 64]} />
-          <primitive object={materials.body} attach="material" />
-        </mesh>
+        {/* --- FRONT SIDE (HEADS - $) --- */}
+        <group position={[0, 0.25, 0]}>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+            <circleGeometry args={[1.9, 64]} />
+            <primitive object={materials.body} attach="material" />
+          </mesh>
 
-        {/* Front Raised Outer Rim */}
-        <mesh castShadow receiveShadow position={[0, 0.2, 0]} rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[1.85, 0.12, 16, 64]} />
-          <primitive object={materials.polished} attach="material" />
-        </mesh>
-
-        {/* Front Engraved Details */}
-        <group position={[0, 0.2, 0]}>
-          {stars.map((pos, i) => (
-            <mesh key={`top-star-${i}`} position={[pos[0], 0, pos[1]]} castShadow>
-              <sphereGeometry args={[0.07, 12, 12]} />
-              <primitive object={materials.polished} attach="material" />
-            </mesh>
-          ))}
-
-          {/* Central Logo - Dollar Sign (Heads) */}
+          {/* Central Logo '$' */}
           <Text
+            position={[0, 0.12, 0]}
             rotation={[-Math.PI / 2, 0, 0]}
-            position={[0, 0, -0.1]}
-            fontSize={1.8}
-            fontWeight="black"
+            fontSize={1.6}
+            fontWeight={900}
             anchorX="center"
             anchorY="middle"
             material={materials.polished}
-            castShadow
           >
             $
           </Text>
-          <Text
-            rotation={[-Math.PI / 2, 0, 0]}
-            position={[0, 0, 1.0]}
-            fontSize={0.3}
-            letterSpacing={0.3}
-            fontWeight="black"
-            material={materials.polished}
-            castShadow
-          >
-            HEADS
-          </Text>
-        </group>
 
-        {/* --- BACK BASE (TAILS) --- */}
-        <mesh receiveShadow position={[0, -0.191, 0]} rotation={[Math.PI / 2, 0, 0]}>
-          <circleGeometry args={[1.9, 64]} />
-          <primitive object={materials.body} attach="material" />
-        </mesh>
+          <mesh rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[1.85, 0.08, 16, 64]} />
+            <primitive object={materials.polished} attach="material" />
+          </mesh>
 
-        {/* Back Raised Outer Rim */}
-        <mesh castShadow receiveShadow position={[0, -0.2, 0]} rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[1.85, 0.12, 16, 64]} />
-          <primitive object={materials.polished} attach="material" />
-        </mesh>
-
-        {/* Back Engraved Details */}
-        <group position={[0, -0.2, 0]} rotation={[Math.PI, 0, 0]}>
           {stars.map((pos, i) => (
-            <mesh key={`bot-star-${i}`} position={[pos[0], 0, pos[1]]} castShadow>
+            <mesh key={`top-star-${i}`} position={[pos[0], 0, pos[1]]}>
               <sphereGeometry args={[0.07, 12, 12]} />
               <primitive object={materials.polished} attach="material" />
             </mesh>
           ))}
+        </group>
 
-          {/* Central Logo - Tails Symbol */}
+        {/* --- BACK SIDE (TAILS - 0) --- */}
+        <group position={[0, -0.25, 0]} rotation={[Math.PI, 0, 0]}>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+            <circleGeometry args={[1.9, 64]} />
+            <primitive object={materials.body} attach="material" />
+          </mesh>
+
+          {/* Central Logo '0' */}
           <Text
+            position={[0, 0.12, 0]}
             rotation={[-Math.PI / 2, 0, 0]}
-            position={[0, 0, -0.1]}
-            fontSize={1.7}
-            fontWeight="black"
+            fontSize={1.5}
+            fontWeight={900}
             anchorX="center"
             anchorY="middle"
             material={materials.polished}
-            castShadow
           >
-            T
+            0
           </Text>
 
-          <Text
-            rotation={[-Math.PI / 2, 0, 0]}
-            position={[0, 0, 1.0]}
-            fontSize={0.3}
-            letterSpacing={0.3}
-            fontWeight="black"
-            material={materials.polished}
-            castShadow
-          >
-            TAILS
-          </Text>
+          <mesh rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[1.85, 0.08, 16, 64]} />
+            <primitive object={materials.polished} attach="material" />
+          </mesh>
+
+          {stars.map((pos, i) => (
+            <mesh key={`bot-star-${i}`} position={[pos[0], 0, pos[1]]}>
+              <sphereGeometry args={[0.07, 12, 12]} />
+              <primitive object={materials.polished} attach="material" />
+            </mesh>
+          ))}
         </group>
-
       </group>
     </group>
   );

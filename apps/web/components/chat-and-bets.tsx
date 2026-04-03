@@ -12,9 +12,15 @@ import {
   TabsContent,
 } from "@workspace/ui/components/tabs";
 import { useInterwovenKit } from "@initia/interwovenkit-react";
-import { Wallet, ChevronRight } from "lucide-react";
+import { Wallet, ChevronRight, Coins } from "lucide-react";
 import { ChatArea } from "./chat-area";
-
+import { DrawerHeader, DrawerTitle } from "@workspace/ui/components/drawer";
+import { useRoom, useRoomState } from "./providers/colyseus";
+import { useUserBalance } from "../hooks/use-user-balance";
+import { JoinGameSchema } from "@workspace/shared/colysues/rooms";
+import z from "zod";
+import { formatDistanceToNow } from "date-fns";
+import { Bet as RoomBet } from "@workspace/shared/colysues/schema";
 interface Bet {
   id: string;
   user: string;
@@ -24,27 +30,35 @@ interface Bet {
 }
 
 export function ChatAndBets(props: { isMobile: boolean }) {
-  const { openWallet, isConnected } = useInterwovenKit();
+  const { room } = useRoom()
+  const roomState = useRoomState(state => state)
+  const isDemoMode = roomState?.isDemoMode;
+  const { openWallet, isConnected, hexAddress } = useInterwovenKit();
+  const { balance: demoBalance } = useUserBalance(hexAddress);
   const [isBetting, setIsBetting] = useState(false);
   const [activeTab, setActiveTab] = useState<"chat" | "bets">("bets");
-  const [bets, setBets] = useState<Bet[]>([
-    { id: "1", user: "0x8F2e...A93b", amount: "500.00", face: "Heads", time: "Just now" },
-    { id: "2", user: "0x3C1d...D2e1", amount: "150.50", face: "Tails", time: "2s ago" },
-    { id: "3", user: "0x1A2b...F5c7", amount: "1000.00", face: "Tails", time: "10s ago" },
-    { id: "4", user: "0x7D4e...B1a2", amount: "5000.00", face: "Heads", time: "12s ago" },
-    { id: "5", user: "0x9F3c...E4d1", amount: "25.00", face: "Heads", time: "20s ago" },
-  ]);
 
-  const handleBetSuccess = (amount: string, side: "Heads" | "Tails") => {
-    const newBet: Bet = {
-      id: Math.random().toString(),
-      user: "You",
-      amount: parseFloat(amount).toFixed(2),
-      face: side,
-      time: "Just now",
-    };
+  const betsMap = roomState?.bets as unknown as Record<string, RoomBet> | Map<string, RoomBet> | undefined;
 
-    setBets([newBet, ...bets]);
+  const betsArray: RoomBet[] = betsMap
+    ? typeof (betsMap as Map<string, RoomBet>).values === "function"
+      ? Array.from((betsMap as Map<string, RoomBet>).values())
+      : Object.values(betsMap as Record<string, RoomBet>)
+    : [];
+
+  const bets: Bet[] = betsArray
+    .sort((a, b) => new Date(b.dt).getTime() - new Date(a.dt).getTime())
+    .map((b) => ({
+      id: b.address,
+      user: `${b.address.slice(0, 6)}...${b.address.slice(-4)}`,
+      amount: Number(b.amount).toFixed(2),
+      face: b.side === 1 ? "Heads" : "Tails",
+      time: b.dt ? formatDistanceToNow(new Date(b.dt), { addSuffix: true }) : "Just now"
+    }));
+
+
+  const handleBetSuccess = (data: z.infer<typeof JoinGameSchema>) => {
+    room?.send("joinGame", data)
     setIsBetting(false);
   };
 
@@ -75,16 +89,41 @@ export function ChatAndBets(props: { isMobile: boolean }) {
             className="flex flex-col flex-1 overflow-hidden"
           >
             {/* Header */}
-            {!props.isMobile && (
+              {props.isMobile ? (
+                <DrawerHeader className="py-2!">
+                  <DrawerTitle>Coinflip</DrawerTitle>
+                  <div className="flex justify-end items-center gap-2">
+                    {isConnected && isDemoMode && (
+                      <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-primary/20 border border-primary/30">
+                        <Coins className="size-3 text-primary" />
+                        <span className="text-[10px] font-black text-primary">{demoBalance}</span>
+                      </div>
+                    )}
+                    {isConnected && (
+                      <Button onClick={openWallet} size={"icon"} variant={"ghost"} className=" cursor-pointer rounded-full">
+                        <Wallet />
+                      </Button>
+                    )}
+                  </div>
+                </DrawerHeader>
+              ) : (
               <div className="flex flex-row items-center justify-between p-4 border-b border-border/50 shrink-0 space-y-0">
                 <h1 className="text-xl font-black bg-clip-text text-transparent bg-linear-to-r from-primary to-primary/60 drop-shadow-sm">
                   Coinflip
                 </h1>
+                <div className="flex items-center gap-2">
+                {isConnected && isDemoMode && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 shrink-0">
+                    <Coins className="size-3.5 text-primary" />
+                    <span className="text-xs font-black text-primary uppercase tracking-tight">{demoBalance} INIT</span>
+                  </div>
+                )}
                 {isConnected && (
                   <Button onClick={openWallet} size={"icon"} variant={"ghost"} className="cursor-pointer rounded-full">
                     <Wallet className="size-5" />
                   </Button>
                 )}
+                </div>
               </div>
             )}
 
@@ -96,7 +135,7 @@ export function ChatAndBets(props: { isMobile: boolean }) {
               <div className="p-4 shrink-0 pb-2">
                 <TabsList className="w-full grid grid-cols-2">
                   <TabsTrigger value="bets" className="cursor-pointer">
-                    Recent Bets
+                    Bets
                   </TabsTrigger>
                   <TabsTrigger value="chat" className="cursor-pointer">
                     Chat
@@ -107,27 +146,34 @@ export function ChatAndBets(props: { isMobile: boolean }) {
               <div className="flex-1 overflow-hidden px-0 pb-0 p-0">
                 <TabsContent value="bets" className="m-0 h-full flex flex-col outline-hidden bg-transparent">
                   <div className="flex-1 overflow-y-auto px-4 py-2 custom-scrollbar space-y-1">
-                    {bets.map((bet, idx) => (
-                      <motion.div
-                        role="button"
-                        key={bet.id}
-                        initial={{ y: 10, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: idx * 0.05 }}
-                        className="p-3 cursor-pointer rounded-xl border border-border/50 bg-background/50 hover:bg-muted/30 transition-colors flex items-center justify-between group"
-                      >
-                        <div className="flex flex-col gap-1">
-                          <span className="text-sm font-bold">{bet.user}</span>
-                          <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">{bet.time}</span>
-                        </div>
-                        <div className="flex flex-col items-end gap-1">
-                          <span className="text-sm font-mono font-black text-primary">{bet.amount} INIT</span>
-                          <span className={`text-[10px] uppercase font-black tracking-widest ${bet.face === "Heads" ? "text-amber-500" : "text-slate-400"}`}>
-                            {bet.face}
-                          </span>
-                        </div>
-                      </motion.div>
-                    ))}
+                    {bets.length > 0 ? (
+                      bets.map((bet, idx) => (
+                        <motion.div
+                          role="button"
+                          key={bet.id}
+                          initial={{ y: 10, opacity: 0 }}
+                          animate={{ y: 0, opacity: 1 }}
+                          transition={{ delay: idx * 0.05 }}
+                          className="p-3 cursor-pointer rounded-xl border border-border/50 bg-background/50 hover:bg-muted/30 transition-colors flex items-center justify-between group"
+                        >
+                          <div className="flex flex-col gap-1">
+                            <span className="text-sm font-bold">{bet.user}</span>
+                            <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">{bet.time}</span>
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="text-sm font-mono font-black text-primary">{bet.amount} INIT</span>
+                            <span className={`text-[10px] uppercase font-black tracking-widest ${bet.face === "Heads" ? "text-amber-500" : "text-slate-400"}`}>
+                              {bet.face}
+                            </span>
+                          </div>
+                        </motion.div>
+                      ))
+                    ) : (
+                      <div className="h-full flex flex-col items-center justify-center opacity-50 space-y-2 py-10">
+                        <span className="text-sm font-bold tracking-widest uppercase">No bets</span>
+                        <span className="text-[10px] font-medium">Be the first to place a bet!</span>
+                      </div>
+                    )}
                   </div>
                 </TabsContent>
 
@@ -141,7 +187,8 @@ export function ChatAndBets(props: { isMobile: boolean }) {
             {activeTab === "bets" && (
               <div className="p-4 border-t border-border/50 bg-card/80 backdrop-blur-md shrink-0">
                 {isConnected ? (
-                  <Button
+                    <Button
+                      type="button"
                     onClick={() => setIsBetting(true)}
                     size="lg"
                     className="w-full group transition-all rounded-xl font-black text-sm cursor-pointer shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-[0.99]"
@@ -149,7 +196,8 @@ export function ChatAndBets(props: { isMobile: boolean }) {
                     Place Bet <ChevronRight className="size-4 ml-1 group-hover:ml-2 transition-all" />
                   </Button>
                 ) : (
-                  <Button
+                      <Button
+                        type="button"
                     onClick={openWallet}
                     size="lg"
                     className="w-full h-12 rounded-xl font-black text-sm uppercase tracking-widest cursor-pointer shadow-lg shadow-primary/20"

@@ -10,7 +10,8 @@ import { Toaster } from "@workspace/ui/components/sonner"
 const queryClient = new QueryClient()
 
 const minievm = {
-  id: 4303131403034904,
+  id: 2124225178762456,
+  // id: 4303131403034904, 
   name: 'Minievm',
   nativeCurrency: { name: 'INIT', symbol: 'INIT', decimals: 18 },
   rpcUrls: {
@@ -38,7 +39,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <ThemeProvider>
             <ColyseusProvider>
               {children}
-              <Toaster position="bottom-center" richColors />
+              <Toaster position="top-center" richColors />
             </ColyseusProvider>
           </ThemeProvider>
         </InterwovenKitProvider>
