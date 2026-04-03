@@ -12,9 +12,9 @@ import {
   TabsContent,
 } from "@workspace/ui/components/tabs";
 import { useInterwovenKit } from "@initia/interwovenkit-react";
-import { Wallet, ChevronRight, Coins } from "lucide-react";
+import { DrawerHeader, DrawerTitle, DrawerClose } from "@workspace/ui/components/drawer";
+import { X, Wallet, ChevronRight, Coins } from "lucide-react";
 import { ChatArea } from "./chat-area";
-import { DrawerHeader, DrawerTitle } from "@workspace/ui/components/drawer";
 import { useRoom, useRoomState } from "./providers/colyseus";
 import { useUserBalance } from "../hooks/use-user-balance";
 import { JoinGameSchema } from "@workspace/shared/colysues/rooms";
@@ -31,20 +31,14 @@ interface Bet {
 
 export function ChatAndBets(props: { isMobile: boolean }) {
   const { room } = useRoom()
-  const roomState = useRoomState(state => state)
-  const isDemoMode = roomState?.isDemoMode;
+  const isDemoMode = useRoomState(state => state.isDemoMode);
+  const betsMap = useRoomState(state => state.bets);
   const { openWallet, isConnected, hexAddress } = useInterwovenKit();
   const { balance: demoBalance } = useUserBalance(hexAddress);
   const [isBetting, setIsBetting] = useState(false);
   const [activeTab, setActiveTab] = useState<"chat" | "bets">("bets");
 
-  const betsMap = roomState?.bets as unknown as Record<string, RoomBet> | Map<string, RoomBet> | undefined;
-
-  const betsArray: RoomBet[] = betsMap
-    ? typeof (betsMap as Map<string, RoomBet>).values === "function"
-      ? Array.from((betsMap as Map<string, RoomBet>).values())
-      : Object.values(betsMap as Record<string, RoomBet>)
-    : [];
+  const betsArray: RoomBet[] = Object.values(betsMap ?? {}) as unknown as RoomBet[];
 
   const bets: Bet[] = betsArray
     .sort((a, b) => new Date(b.dt).getTime() - new Date(a.dt).getTime())
@@ -91,7 +85,11 @@ export function ChatAndBets(props: { isMobile: boolean }) {
             {/* Header */}
               {props.isMobile ? (
                 <DrawerHeader className="px-4 py-2 flex flex-row items-center justify-between relative">
-                  <div className="w-10" /> {/* Spacer for centering */}
+                  <DrawerClose asChild>
+                    <Button size="icon" variant="ghost" className="size-8 rounded-full cursor-pointer">
+                      <X className="size-5" />
+                    </Button>
+                  </DrawerClose>
                   <DrawerTitle className="text-xl py-0 font-black bg-clip-text text-transparent bg-linear-to-r from-primary to-primary/60 drop-shadow-sm">
                     Coinflip
                   </DrawerTitle>
