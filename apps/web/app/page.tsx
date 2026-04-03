@@ -104,7 +104,7 @@ export default function Page() {
 
       {isMobile ? (
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-40 pointer-events-auto">
-          <Drawer>
+          <Drawer modal={false}>
             <DrawerTrigger asChild>
               <Button size="lg" className="rounded-full shadow-2xl px-8 uppercase tracking-widest font-bold">
                 Bet Now

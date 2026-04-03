@@ -90,18 +90,21 @@ export function ChatAndBets(props: { isMobile: boolean }) {
           >
             {/* Header */}
               {props.isMobile ? (
-                <DrawerHeader className="py-2!">
-                  <DrawerTitle>Coinflip</DrawerTitle>
-                  <div className="flex justify-end items-center gap-2">
+                <DrawerHeader className="px-4 py-2 flex flex-row items-center justify-between relative">
+                  <div className="w-10" /> {/* Spacer for centering */}
+                  <DrawerTitle className="text-xl py-0 font-black bg-clip-text text-transparent bg-linear-to-r from-primary to-primary/60 drop-shadow-sm">
+                    Coinflip
+                  </DrawerTitle>
+                  <div className="flex justify-end items-center gap-2 min-w-10">
                     {isConnected && isDemoMode && (
-                      <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-primary/20 border border-primary/30">
-                        <Coins className="size-3 text-primary" />
+                      <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/20 border border-primary/30">
+                        <Coins className="size-2.5 text-primary" />
                         <span className="text-[10px] font-black text-primary">{demoBalance}</span>
                       </div>
                     )}
                     {isConnected && (
-                      <Button onClick={openWallet} size={"icon"} variant={"ghost"} className=" cursor-pointer rounded-full">
-                        <Wallet />
+                      <Button onClick={openWallet} size={"icon"} variant={"ghost"} className="cursor-pointer rounded-full size-8">
+                        <Wallet className="size-4" />
                       </Button>
                     )}
                   </div>
