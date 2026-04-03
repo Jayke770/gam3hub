@@ -19,15 +19,17 @@ const useRoomState: <U = unknown>(selector?: (state: CoinFlipState) => U) => Sna
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const useRoomMessage: any = context.useRoomMessage;
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 function MessageHandler() {
+    const addMessage = useMessageStore((state) => state.addMessage);
     const setMessages = useMessageStore((state) => state.setMessages);
     const messagesInState = useRoomState((state) => state.messages);
-    
+    const initialSyncDone = useRef(false);
+
+    // Initial history sync - only once per room join
     useEffect(() => {
-        if (messagesInState) {
-            // Map the ArraySchema messages into our local store format
+        if (!initialSyncDone.current && messagesInState && messagesInState.length > 0) {
             const history = messagesInState.map(m => ({
                 id: Math.random().toString(36).substring(7),
                 user: m.user,
@@ -35,9 +37,15 @@ function MessageHandler() {
                 dateTime: m.dateTime
             }));
             setMessages(history);
+            initialSyncDone.current = true;
         }
     }, [messagesInState, setMessages]);
-    
+
+    // Fast-path listener for new messages
+    useRoomMessage("chat", (msg: { user: string; message: string; dateTime?: string }) => {
+        addMessage({ user: msg.user, message: msg.message, dateTime: msg.dateTime });
+    });
+
     useRoomMessage("error", (msg: string) => {
         toast.error(msg);
     });

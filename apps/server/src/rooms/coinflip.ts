@@ -48,6 +48,7 @@ export class CoinFlip extends Room {
       if (this.state.messages.length > 50) {
         this.state.messages.shift();
       }
+      this.broadcast("chat", message)
     }),
     joinGame: validate(JoinGameSchema, async (client: Client, message) => {
       console.log("New bet: ", message)
@@ -241,6 +242,7 @@ export class CoinFlip extends Room {
   async settleGame() {
     console.log("booomm!");
     this.broadcast("settleStart", { timestamp: Date.now() });
+    this.broadcast("chat", { message: "Game is settling...", user: "Server" })
     this.state.messages.push(new ChatMessage().assign({ message: "Game is settling...", user: "Server", dateTime: new Date().toISOString() }))
     if (this.state.messages.length > 50) this.state.messages.shift();
     try {
@@ -284,6 +286,7 @@ export class CoinFlip extends Room {
         this.clock.setTimeout(() =>   // Broadcast the outcome
         {
           const msg = { message: `Game settled! ${outcome === 1 ? "Heads" : "Tails"} wins!`, user: "Server" };
+          this.broadcast("chat", msg)
           this.state.messages.push(new ChatMessage().assign({ ...msg, dateTime: new Date().toISOString() }))
           if (this.state.messages.length > 50) this.state.messages.shift();
           this.broadcast("settleOutcome", { outcome, gameId: currentGameId })
