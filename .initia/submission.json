@@ -2,7 +2,7 @@
   "project_name": "Gam3Hub",
   "repo_url": "https://github.com/jayke770/gam3hub",
   "commit_sha": "92a63e8795a108e9f0a9c22f0d69bc2bf440b711",
-  "rollup_chain_id": "gam3hub",
+  "rollup_chain_id": "evm-1",
   "deployed_address": "0x657d003c673db25882c1dd6ac859d88fcaede375",
   "vm": "evm",
   "native_feature": "auto-signing",
