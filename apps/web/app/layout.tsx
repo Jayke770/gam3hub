@@ -1,7 +1,14 @@
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "GameHub",
+  description: "GameHub",
+}
+
 import { Geist, Geist_Mono, Instrument_Sans } from "next/font/google"
 
 import "@workspace/ui/globals.css"
-import { ThemeProvider } from "@/components/theme-provider"
+import { Providers } from "@/components/providers"
 import { cn } from "@workspace/ui/lib/utils";
 
 const instrumentSansHeading = Instrument_Sans({subsets:['latin'],variable:'--font-heading'});
@@ -25,7 +32,7 @@ export default function RootLayout({
       className={cn("antialiased", fontSans.variable, "font-mono", geistMono.variable, instrumentSansHeading.variable)}
     >
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   )

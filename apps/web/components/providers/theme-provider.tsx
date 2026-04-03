@@ -10,9 +10,7 @@ function ThemeProvider({
   return (
     <NextThemesProvider
       attribute="class"
-      defaultTheme="system"
-      enableSystem
-      disableTransitionOnChange
+      defaultTheme="dark"
       {...props}
     >
       <ThemeHotkey />

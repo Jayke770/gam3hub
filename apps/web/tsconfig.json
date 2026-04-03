@@ -10,7 +10,9 @@
       {
         "name": "next"
       }
-    ]
+    ], 
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
   },
   "include": [
     "next-env.d.ts",

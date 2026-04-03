@@ -1,0 +1,57 @@
+{
+  "private": true,
+  "name": "server",
+  "version": "0.17.0",
+  "description": "npm init template for bootstrapping an empty Colyseus project",
+  "type": "module",
+  "main": "build/index.js",
+  "engines": {
+    "node": ">= 20.9.0"
+  },
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "loadtest": "bun run loadtest/example.ts --room my_room --numClients 2",
+    "build": "bun run clean && tsc -p tsconfig.build.json",
+    "clean": "rimraf build",
+    "test": "mocha -r tsx test/**.test.ts --exit --timeout 15000"
+  },
+  "author": "",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/colyseus/create-colyseus/issues"
+  },
+  "homepage": "https://github.com/colyseus/create-colyseus#readme",
+  "devDependencies": {
+    "@colyseus/loadtest": "^0.17.7",
+    "@colyseus/sdk": "0.17.35",
+    "@colyseus/testing": "^0.17.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.1",
+    "@types/mocha": "^10.0.1",
+    "@types/pg": "^8.20.0",
+    "drizzle-kit": "^0.31.10",
+    "mocha": "^11.7.5",
+    "rimraf": "^5.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.0.4"
+  },
+  "dependencies": {
+    "@colyseus/bun-websockets": "^0.17.11",
+    "@colyseus/monitor": "^0.17.8",
+    "@colyseus/playground": "^0.17.12",
+    "@colyseus/redis-driver": "^0.17.7",
+    "@colyseus/redis-presence": "^0.17.7",
+    "@colyseus/schema": "4.0.0",
+    "@colyseus/tools": "^0.17.0",
+    "@initia/initia.js": "^1.0.21",
+    "@workspace/shared": "workspace:*",
+    "colyseus": "^0.17.6",
+    "cors": "^2.8.6",
+    "drizzle-orm": "^0.45.2",
+    "express": "^4.18.2",
+    "pg": "^8.20.0",
+    "postgres": "^3.4.8",
+    "viem": "^2.47.6",
+    "zod": "^4.3.6"
+  }
+}

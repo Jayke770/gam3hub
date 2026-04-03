@@ -34,3 +34,10 @@ npm-debug.log*
 # Misc
 .DS_Store
 *.pem
+
+skills* 
+.agents
+apps/contract/broadcast 
+apps/contract/cache 
+apps/contract/scripts 
+apps/contract/lib
