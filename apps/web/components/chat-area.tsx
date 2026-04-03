@@ -77,8 +77,8 @@ export function ChatArea() {
       user: userWalletAddress || "0x0...",
     });
     
-    setNextChatAt(Date.now() + 30000); // 30s rate limit
-    setCooldownSeconds(30);
+    setNextChatAt(Date.now() + 10000); // 30s rate limit
+    setCooldownSeconds(10);
     form.reset();
   };
 
