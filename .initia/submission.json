@@ -1,0 +1,12 @@
+{
+  "project_name": "Gam3Hub",
+  "repo_url": "https://github.com/jayke770/gam3hub",
+  "commit_sha": "TBA",
+  "rollup_chain_id": "minievm",
+  "deployed_address": "0x657d003c673db25882c1dd6ac859d88fcaede375",
+  "vm": "evm",
+  "native_feature": "auto-signing",
+  "core_logic_path": "apps/contract/Gam3Hub.sol",
+  "native_feature_frontend_path": "TBA",
+  "demo_video_url": "https://youtu.be/LEHl8dwlAcQ"
+}
