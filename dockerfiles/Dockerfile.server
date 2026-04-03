@@ -31,6 +31,8 @@ COPY --from=builder --chown=bun:bun /app/package.json ./package.json
 COPY --from=builder --chown=bun:bun /app/apps/server/ecosystem.config.cjs ./apps/server/ecosystem.config.cjs
 
 EXPOSE 2567
+# Reset entrypoint so PM2 can run directly
+ENTRYPOINT []
 # Run the server using PM2
 WORKDIR /app/apps/server
 CMD ["pm2-runtime", "ecosystem.config.cjs"]
