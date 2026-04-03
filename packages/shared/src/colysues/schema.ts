@@ -7,10 +7,17 @@ export class Bet extends Schema {
     @type("string") dt: string = ""
 }
 
+export class ChatMessage extends Schema {
+    @type("string") user: string = ""
+    @type("string") message: string = ""
+    @type("string") dateTime: string = ""
+}
+
 export class CoinFlipState extends Schema {
     @type("string") gameId?: string
     @type("number") playerCount: number = 0
     @type("number") totalBet: number = 0
     @type("boolean") isDemoMode: boolean = false
     @type({ map: Bet }) bets: Map<string, Bet> = new Map()
+    @type([ ChatMessage ]) messages: ChatMessage[] = []
 }

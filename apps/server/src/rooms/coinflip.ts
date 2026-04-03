@@ -1,5 +1,5 @@
 import { Room, Client, CloseCode, Messages, validate, Delayed } from "colyseus";
-import { Bet, CoinFlipState } from "@workspace/shared/colysues/schema"
+import { Bet, ChatMessage, CoinFlipState } from "@workspace/shared/colysues/schema"
 import { db } from "../models";
 import { and, eq, gt, desc, sql } from "drizzle-orm";
 import { bets, games, users } from "../models/schema";
@@ -39,7 +39,15 @@ export class CoinFlip extends Room {
   private settleTime = 10
   messages = {
     chat: validate(ChatSchema, (client, message) => {
-      this.broadcast("chat", message)
+      const chatMsg = new ChatMessage().assign({
+        user: message.user,
+        message: message.message,
+        dateTime: message.dateTime || new Date().toISOString()
+      });
+      this.state.messages.push(chatMsg);
+      if (this.state.messages.length > 50) {
+        this.state.messages.shift();
+      }
     }),
     joinGame: validate(JoinGameSchema, async (client: Client, message) => {
       console.log("New bet: ", message)
@@ -233,7 +241,8 @@ export class CoinFlip extends Room {
   async settleGame() {
     console.log("booomm!");
     this.broadcast("settleStart", { timestamp: Date.now() });
-    this.broadcast("chat", ChatSchema.parse({ message: "Game is settling...", user: "Server" }))
+    this.state.messages.push(new ChatMessage().assign({ message: "Game is settling...", user: "Server", dateTime: new Date().toISOString() }))
+    if (this.state.messages.length > 50) this.state.messages.shift();
     try {
       const currentGameId = this.state.gameId?.toLowerCase() || "0xdemo";
       let outcome: number;
@@ -274,7 +283,9 @@ export class CoinFlip extends Room {
         this.clock.start()
         this.clock.setTimeout(() =>   // Broadcast the outcome
         {
-          this.broadcast("chat", ChatSchema.parse({ message: `Game settled! ${outcome === 1 ? "Heads" : "Tails"} wins!`, user: "Server" }))
+          const msg = { message: `Game settled! ${outcome === 1 ? "Heads" : "Tails"} wins!`, user: "Server" };
+          this.state.messages.push(new ChatMessage().assign({ ...msg, dateTime: new Date().toISOString() }))
+          if (this.state.messages.length > 50) this.state.messages.shift();
           this.broadcast("settleOutcome", { outcome, gameId: currentGameId })
         }, 1000 * 5)
 
