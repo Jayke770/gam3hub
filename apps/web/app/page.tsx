@@ -6,7 +6,6 @@ import { CoinArena } from "@/components/coin-arena";
 import { Button } from "@workspace/ui/components/button";
 import { Drawer, DrawerTrigger, DrawerContent } from "@workspace/ui/components/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useInterwovenKit } from "@initia/interwovenkit-react";
 import { HowlerMusic } from "@/components/howler-music";
 import { useRoomMessage } from "@/components/providers/colyseus";
 import { toast } from "sonner";
@@ -14,7 +13,6 @@ import { toast } from "sonner";
 
 export default function Page() { 
   const isMobile = useIsMobile();
-  const { isConnected } = useInterwovenKit()
   const [isFlipping, setIsFlipping] = useState(false);
   const [targetFace, setTargetFace] = useState<"Heads" | "Tails" | null>(null);
   const [themeColors, setThemeColors] = useState({
@@ -109,8 +107,8 @@ export default function Page() {
                 Bet Now
               </Button>
             </DrawerTrigger>
-            <DrawerContent className="h-[80svh] px-0 border-t-0">
-              <div className="flex-1 overflow-hidden w-full h-full flex flex-col mt-2">
+            <DrawerContent className="h-[80dvh] px-0 border-t-0 flex flex-col">
+              <div className="flex-1 overflow-hidden w-full flex flex-col mt-2">
                 <ChatAndBets isMobile={isMobile} />
               </div>
             </DrawerContent>

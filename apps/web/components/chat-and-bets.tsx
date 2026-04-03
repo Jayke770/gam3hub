@@ -180,7 +180,7 @@ export function ChatAndBets(props: { isMobile: boolean }) {
                   </div>
                 </TabsContent>
 
-                <TabsContent value="chat" className="m-0 h-full outline-hidden bg-transparent">
+                <TabsContent value="chat" className="m-0 h-full outline-hidden bg-transparent flex flex-col overflow-hidden">
                   <ChatArea />
                 </TabsContent>
               </div>
