@@ -43,7 +43,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn("antialiased", fontSans.variable, "font-mono", geistMono.variable, instrumentSansHeading.variable)}
+      className={cn("antialiased dark", fontSans.variable, "font-mono", geistMono.variable, instrumentSansHeading.variable)}
     >
       <body>
         <Providers>{children}</Providers>
