@@ -11,17 +11,14 @@ import { cn } from '@workspace/ui/lib/utils'
 import { useInterwovenKit } from "@initia/interwovenkit-react";
 import { toast } from "sonner";
 import { gameClient } from "@/lib/constants";
-
+import { useEffect, useRef } from "react";
 const context = createRoomContext<CoinFlipState>();
 const RoomProvider = context.RoomProvider;
 const useRoom: () => UseRoomResult<unknown, CoinFlipState> = context.useRoom;
 const useRoomState: <U = unknown>(selector?: (state: CoinFlipState) => U) => Snapshot<U> | undefined = context.useRoomState;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const useRoomMessage: any = context.useRoomMessage;
-
-import { useEffect, useRef } from "react";
-
-function MessageHandler() {
+function MinesRoomMessageHandler() {
     const addMessage = useMessageStore((state) => state.addMessage);
     const setMessages = useMessageStore((state) => state.setMessages);
     const messagesInState = useRoomState((state) => state.messages);
@@ -30,7 +27,7 @@ function MessageHandler() {
     // Initial history sync - only once per room join
     useEffect(() => {
         if (!initialSyncDone.current && messagesInState && messagesInState.length > 0) {
-            const history = messagesInState.map(m => ({
+            const history = Array.from(messagesInState).map(m => ({
                 id: Math.random().toString(36).substring(7),
                 user: m.user,
                 message: m.message,
@@ -53,7 +50,7 @@ function MessageHandler() {
     return null;
 }
 
-function RoomStatus() {
+function MinesRoomStatus() {
     const room = useRoom();
     const isDemoMode = room?.room?.state?.isDemoMode;
 
@@ -78,13 +75,13 @@ function RoomStatus() {
     )
 }
 
-export function ColyseusProvider({ children }: { children: ReactNode }) {
+export function MinesRoomProvider({ children }: { children: ReactNode }) {
     const { hexAddress: userWalletAddress } = useInterwovenKit()
-    const { data } = useSWR<SeatReservation>('/api/user', () => gameClient.http.post("/api/join-room", { body: { user: userWalletAddress ?? "Anonymous" } }).then(e => e.data).catch(() => null))
+    const { data } = useSWR<SeatReservation>('/api/user', () => gameClient.http.post("/api/join-room", { body: { user: userWalletAddress ?? "Anonymous", room: "mines" } }).then(e => e.data).catch(() => null))
     return (
         <RoomProvider connect={data ? () => gameClient.consumeSeatReservation(data) : false} >
-            <RoomStatus />
-            <MessageHandler />
+            <MinesRoomStatus />
+            <MinesRoomMessageHandler />
             {children}
         </RoomProvider>
     )

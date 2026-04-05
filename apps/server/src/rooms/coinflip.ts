@@ -1,4 +1,4 @@
-import { Room, Client, CloseCode, Messages, validate, Delayed } from "colyseus";
+import { Room, Client, CloseCode, validate, Delayed } from "colyseus";
 import { Bet, ChatMessage, CoinFlipState } from "@workspace/shared/colysues/schema"
 import { db } from "../models";
 import { and, eq, gt, desc, sql } from "drizzle-orm";
@@ -18,21 +18,6 @@ const walletClient = createWalletClient({
   account,
   transport: http(env.RPC_URL)
 });
-
-interface GameView {
-  gameId: Hex;
-  isActive: boolean;
-  gameCreated: bigint;
-  gameEnd: bigint;
-  totalPlayers: bigint;
-  headsPool: bigint;
-  tailsPool: bigint;
-  gameOutcome: number;
-  commitment: Hex;
-  prevRandao: bigint;
-  serverSeed: Hex;
-}
-
 export class CoinFlip extends Room {
   state = new CoinFlipState();
   public delayedInterval: Delayed;
@@ -86,7 +71,10 @@ export class CoinFlip extends Room {
         id: gameIdNorm,
         gameCreated: Math.floor(Date.now() / 1000).toString(),
         isActive: true
-      }).onConflictDoNothing();
+      }).onConflictDoUpdate({
+        target: games.id,
+        set: { isActive: true }
+      });
 
       const newPlayer = await db.insert(bets).values({
         gameId: gameIdNorm,
@@ -119,7 +107,7 @@ export class CoinFlip extends Room {
       } else if (this.isSettling) {
         console.log(`[Cron] Settlement already in progress, skipping...`);
       }
-    }, 1000 * 10);
+    }, 1000 * this.settleTime);
   }
 
   async onJoin(client: Client, options: { user: string }) {
@@ -165,12 +153,17 @@ export class CoinFlip extends Room {
     let tailsPool = 0n;
 
     if (env.IS_DEMO_MODE) {
-      currentgameId = this.state.gameId || "0xdemo";
+      const activeGame = await db.query.games.findFirst({
+        where: eq(games.isActive, true),
+        orderBy: desc(games.gameCreated)
+      });
+      currentgameId = activeGame?.id || this.state.gameId || "0xdemo";
+
       const dbBets = await db.select().from(bets).where(eq(bets.gameId, currentgameId.toLowerCase()));
       totalPlayers = dbBets.length;
       dbBets.forEach(b => {
-        if (b.side === 1) headsPool += BigInt(Number(b.amount) * 1e18);
-        else tailsPool += BigInt(Number(b.amount) * 1e18);
+        if (b.side === 1) headsPool += BigInt(Math.floor(Number(b.amount) * 1e18));
+        else tailsPool += BigInt(Math.floor(Number(b.amount) * 1e18));
       });
     } else {
       currentgameId = await publicClient.readContract({
@@ -186,7 +179,7 @@ export class CoinFlip extends Room {
         address: env.COINFLIP_CONTRACT_ADDRESS as Hex,
         args: [currentgameId as Hex],
         authorizationList: []
-      } as const) as unknown as GameView;
+      })
 
       totalPlayers = Number(gameData.totalPlayers);
       headsPool = gameData.headsPool;
@@ -253,7 +246,6 @@ export class CoinFlip extends Room {
       return;
     }
     this.isSettling = true;
-    console.log("booomm!");
     this.broadcast("settleStart", { timestamp: Date.now() });
     this.broadcast("chat", { message: "Game is settling...", user: "Server", dateTime: new Date().toISOString() })
     this.state.messages.push(new ChatMessage().assign({ message: "Game is settling...", user: "Server", dateTime: new Date().toISOString() }))
@@ -287,6 +279,9 @@ export class CoinFlip extends Room {
         await db.update(games)
           .set({ gameOutcome: outcome, isActive: false })
           .where(eq(games.id, currentGameId));
+
+        // Ensure only one game is active
+        await db.update(games).set({ isActive: false }).where(eq(games.isActive, true));
 
         // Create next dummy game
         const nextGameId = "0xdemo_" + Date.now();
@@ -333,7 +328,7 @@ export class CoinFlip extends Room {
           address: env.COINFLIP_CONTRACT_ADDRESS as Hex,
           args: [currentGameId as Hex],
           authorizationList: []
-        }) as unknown as GameView;
+        })
 
         outcome = Number(gameData.gameOutcome);
         this.broadcast("settleOutcome", { outcome, gameId: currentGameId });
