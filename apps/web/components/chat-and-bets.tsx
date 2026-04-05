@@ -15,7 +15,7 @@ import { useInterwovenKit } from "@initia/interwovenkit-react";
 import { DrawerHeader, DrawerTitle, DrawerClose } from "@workspace/ui/components/drawer";
 import { X, Wallet, ChevronRight, Coins } from "lucide-react";
 import { ChatArea } from "./chat-area";
-import { useRoom, useRoomState } from "./providers/colyseus";
+import { useRoom, useRoomState } from "./providers/";
 import { useUserBalance } from "../hooks/use-user-balance";
 import { JoinGameSchema } from "@workspace/shared/colysues/rooms";
 import z from "zod";

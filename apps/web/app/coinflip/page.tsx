@@ -7,7 +7,7 @@ import { Button } from "@workspace/ui/components/button";
 import { Drawer, DrawerTrigger, DrawerContent } from "@workspace/ui/components/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { HowlerMusic } from "@/components/howler-music";
-import { useRoomMessage } from "@/components/providers/colyseus";
+import { useRoomMessage } from "@/components/providers/";
 import { toast } from "sonner";
 
 
