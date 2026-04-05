@@ -1,4 +1,4 @@
-import { Schema, type } from "@colyseus/schema";
+import { ArraySchema, MapSchema, Schema, SetSchema, type } from "@colyseus/schema";
 
 export class Bet extends Schema {
     @type("string") address: string = ""
@@ -18,6 +18,19 @@ export class CoinFlipState extends Schema {
     @type("number") playerCount: number = 0
     @type("number") totalBet: number = 0
     @type("boolean") isDemoMode: boolean = false
-    @type({ map: Bet }) bets: Map<string, Bet> = new Map()
-    @type([ ChatMessage ]) messages: ChatMessage[] = []
+    @type({ map: Bet }) bets = new MapSchema<Bet>()
+    @type([ChatMessage]) messages = new ArraySchema<ChatMessage>()
+}
+
+export class MinesPlayer extends Schema {
+    @type("string") address?: string
+    @type("string") txHash?: string
+}
+
+export class MinesState extends Schema {
+    @type("string") gameId?: string
+    @type({ set: MinesPlayer }) players = new SetSchema<MinesPlayer>()
+    @type("number") betAmount?: number
+    @type("string") currentTurn?: string
+    @type("string") status: "waiting" | "playing" | "ended" = "waiting"
 }

@@ -26,7 +26,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { GAM3HUB_ABI } from "@/lib/abis/Gam3Hub";
 import { COINFLIP_CONTRACT_ADDRESS, gameClient, TARGET_CHAIN_ID, BECH32_CHAIN_ID } from "@/lib/constants";
-import { useRoom } from "@/components/providers/colyseus";
+import { useRoom } from "@/components/providers/";
 import { useUserBalance } from "@/hooks/use-user-balance";
 import { ArrowLeft, Coins } from "lucide-react";
 import { motion } from "motion/react";

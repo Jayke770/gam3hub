@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Send, Loader2 } from "lucide-react";
 import { truncate } from "@initia/utils";
 import { useMessageStore } from "@/hooks/useMessageStore";
-import { useRoom } from "@/components/providers/colyseus";
+import { useRoom } from "@/components/providers/";
 import { useInterwovenKit } from "@initia/interwovenkit-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";

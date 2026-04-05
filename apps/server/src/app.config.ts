@@ -4,6 +4,7 @@ import {
     createRouter,
     createEndpoint,
     matchMaker,
+    QueueRoom,
 } from "colyseus";
 import { playground } from "@colyseus/playground";
 import { env } from "./lib/env";
@@ -19,10 +20,11 @@ import { signJoinGame } from "./lib/signJoinGame";
 import { GAM3HUB_ABI } from "./abis/Gam3Hub";
 import { initializeGame } from "./lib/game";
 import { db } from "./models";
-import { bets, users } from "./models/schema";
+import {  users } from "./models/schema";
 import { eq } from "drizzle-orm";
+import { Mines } from "./rooms/mines";
 
-matchMaker.controller.exposedMethods = ["join", "joinById", "reconnect"]
+// matchMaker.controller.exposedMethods = ["join", "joinById", "reconnect"]
 
 const publicClient = createPublicClient({
     transport: http(env.RPC_URL)
@@ -33,27 +35,49 @@ const server = defineServer({
     presence: new RedisPresence(env.PRESENCE_REDIS_URL),
     driver: new RedisDriver(env.DRIVER_REDIS_URL),
     rooms: {
-        coinflip: defineRoom(CoinFlip)
+        coinflip: defineRoom(CoinFlip).enableRealtimeListing(),
+        mines: defineRoom(Mines).enableRealtimeListing(), 
+        queue: defineRoom(QueueRoom, {
+            maxPlayers: 2,
+            matchRoomName: "mines"
+})
     },
     routes: createRouter({
         joinRoom: createEndpoint("/api/join-room", {
             method: "POST",
-            body: z.object({ user: z.string() })
+            body: z.object({ user: z.string(), room: z.union([z.literal("coinflip"), z.literal("mines")]) })
         }, async (ctx) => {
             const { user } = ctx.body;
-            const rooms = await matchMaker.query({ name: "coinflip" })
-            const currentGameId = await publicClient.readContract({
-                address: env.COINFLIP_CONTRACT_ADDRESS as Hex,
-                abi: GAM3HUB_ABI,
-                functionName: 'currentGameId',
-            } as any) as Hex;
-            if (rooms.length <= 0) {
-                const newRoom = await matchMaker.createRoom("coinflip", { gameId: currentGameId })
-                const seatReservation = await matchMaker.joinById(newRoom.roomId, { user })
+            if (ctx.body.room === "coinflip") {
+                const rooms = await matchMaker.query({ name: "coinflip" })
+                const currentGameId = await publicClient.readContract({
+                    address: env.COINFLIP_CONTRACT_ADDRESS as Hex,
+                    abi: GAM3HUB_ABI,
+                    functionName: 'currentGameId',
+                } as any) as Hex;
+                if (rooms.length <= 0) {
+                    const newRoom = await matchMaker.createRoom("coinflip", { gameId: currentGameId })
+                    const seatReservation = await matchMaker.joinById(newRoom.roomId, { user })
+                    return seatReservation
+                }
+                const seatReservation = await matchMaker.joinById(rooms[0].roomId, { user })
                 return seatReservation
             }
-            const seatReservation = await matchMaker.joinById(rooms[0].roomId, { user })
-            return seatReservation
+            // if (ctx.body.room === "mines") {
+            //     const rooms = await matchMaker.query({ name: "mines" });
+            //     const existingRoom = rooms.find(r => r.metadata?.players?.includes(user.toLowerCase()));
+
+            //     if (existingRoom) {
+            //         return await matchMaker.joinById(existingRoom.roomId, { user });
+            //     }
+
+            //     if (rooms.length <= 0) {
+            //         const newRoom = await matchMaker.createRoom("mines", { players: [user.toLowerCase()] });
+            //         return await matchMaker.joinById(newRoom.roomId, { user });
+            //     }
+                
+            //     return await matchMaker.joinById(rooms[0].roomId, { user });
+            // }
         }),
         getServerSignature: createEndpoint("/api/get-signature", {
             method: "GET",

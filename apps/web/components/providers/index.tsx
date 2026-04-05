@@ -4,7 +4,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { InterwovenKitProvider, TESTNET, injectStyles, initiaPrivyWalletConnector, } from "@initia/interwovenkit-react"
 import { WagmiProvider, createConfig, http } from "wagmi"
 import { ThemeProvider } from "@/components/providers/theme-provider"
-import { ColyseusProvider } from "@/components/providers/colyseus"
 import interwovenKitStyles from "@initia/interwovenkit-react/styles.js"
 import { Toaster } from "@workspace/ui/components/sonner"
 const queryClient = new QueryClient()
@@ -27,6 +26,7 @@ const wagmiConfig = createConfig({
 })
 
 
+export * from "./colyseus/coinflip"
 export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     injectStyles(interwovenKitStyles)
@@ -37,10 +37,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <WagmiProvider config={wagmiConfig}>
         <InterwovenKitProvider  {...TESTNET} >
           <ThemeProvider>
-            <ColyseusProvider>
-              {children}
-              <Toaster position="top-center" richColors />
-            </ColyseusProvider>
+            {children}
+            <Toaster position="top-center" richColors />
           </ThemeProvider>
         </InterwovenKitProvider>
       </WagmiProvider>
