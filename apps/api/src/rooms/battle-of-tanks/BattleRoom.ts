@@ -139,7 +139,7 @@ export class BattleRoom extends Room {
     });
 
     this.onMessage("name", (client, name: string) => {
-      if (typeof name === "string" && /^[a-z0-9\-_]{4,8}$/i.test(name)) {
+      if (typeof name === "string" && name.length >= 2 && name.length <= 16) {
         const tank = this.state.tanks.get(client.sessionId);
         if (tank) tank.name = name;
       }
@@ -150,7 +150,7 @@ export class BattleRoom extends Room {
   }
 
   // ── Join / Leave ──────────────────────────────────────────
-  onJoin(client: Client) {
+  onJoin(client: Client, options: any) {
     const teamId = this.pickWeakestTeam();
     this.state.teams[teamId].tanks++;
 
@@ -161,6 +161,13 @@ export class BattleRoom extends Room {
     tank.died = Date.now();
     tank.respawned = Date.now();
     tank.spawnPosition();
+
+    if (options && typeof options.name === "string") {
+      const sanitized = options.name.trim();
+      if (sanitized.length >= 2 && sanitized.length <= 16) {
+        tank.name = sanitized;
+      }
+    }
 
     this.state.tanks.set(client.sessionId, tank);
     this.world.add("tank", tank);

@@ -133,11 +133,11 @@ export class Game {
     window.addEventListener("resize", () => this.onResize());
   }
 
-  async start() {
+  async start(username?: string) {
     await preloadTankModel();
 
     try {
-      this.room = await this.network.connect();
+      this.room = await this.network.connect(username);
       this.mySessionId = this.room.sessionId;
       this.connectStatus.style.display = "none";
       this.bindRoomEvents();
@@ -213,6 +213,10 @@ export class Game {
           this.shieldFill.style.width = `${Math.max(0, val) * 10}%`;
         }
       });
+      callbacks.listen(tank, "name", (val: string) => {
+        entity.setName(val);
+      });
+      entity.setName(tank.name);
       callbacks.listen(tank, "score", (_val: number) => {
         this.updateScores();
       });
@@ -653,7 +657,7 @@ export class Game {
 
     // Update tanks
     for (const [, tank] of this.tanks) {
-      tank.update(0.016);
+      tank.update();
       if (this.map) {
         tank.group.position.y = this.map.getGroundHeight(tank.group.position.x, tank.group.position.z);
       }
