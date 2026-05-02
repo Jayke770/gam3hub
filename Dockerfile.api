@@ -4,7 +4,6 @@ WORKDIR /app
 FROM base AS prepare
 WORKDIR /app
 COPY . .
-# Using bunx ensures we use the correct turbo version
 RUN bunx turbo@2.9.3 prune api --docker
 
 FROM base AS builder
@@ -17,24 +16,21 @@ COPY --from=prepare /app/out/full/ .
 ENV NODE_ENV=production
 RUN bun install --frozen-lockfile
 
-# Compile TypeScript to JavaScript
+# Compile TypeScript to a standalone binary
 WORKDIR /app/apps/api
-RUN bun run build
+RUN bun build ./src/index.ts --compile --outfile api-binary
 
 FROM base AS runner
 USER bun
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Copy node_modules and the compiled build folder
+# Copy the binary and node_modules (required for native addons like msgpackr-extract)
+COPY --from=builder --chown=bun:bun /app/apps/api/api-binary ./api-binary
 COPY --from=builder --chown=bun:bun /app/node_modules ./node_modules
-COPY --from=builder --chown=bun:bun /app/apps/api/build ./apps/api/build
-COPY --from=builder --chown=bun:bun /app/apps/api/package.json ./apps/api/package.json
 
 WORKDIR /app/apps/api
 
-# Expose the default Colyseus port
 EXPOSE 2567
-
-# Run the compiled JavaScript
-CMD ["bun", "run", "build/index.js"]
+ENTRYPOINT []
+CMD ["../../api-binary"]
