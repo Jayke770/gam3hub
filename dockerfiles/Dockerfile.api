@@ -7,33 +7,32 @@ COPY . .
 RUN turbo prune api --docker
 
 FROM base AS builder
-# Copy json and lockfile first to cache dependencies
 COPY --from=prepare /app/out/json/ .
 COPY --from=prepare /app/out/bun.lock ./bun.lock
 RUN bun install --frozen-lockfile
 
-# Copy full source and build
 COPY --from=prepare /app/out/full/ .
 ENV NODE_ENV=production
-
-# Re-run install to link workspace packages correctly
 RUN bun install --frozen-lockfile
 
-# Compile the server into a standalone binary
+# Compile TypeScript to JavaScript
 WORKDIR /app/apps/api
-RUN bun build ./src/index.ts --compile --minify --outfile api
+RUN bun run build
 
 FROM base AS runner
 USER bun
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Copy the standalone binary from the builder stage
-COPY --from=builder --chown=bun:bun /app/apps/api/api ./api
+# Copy node_modules and the compiled build folder
+COPY --from=builder --chown=bun:bun /app/node_modules ./node_modules
+COPY --from=builder --chown=bun:bun /app/apps/api/build ./apps/api/build
+COPY --from=builder --chown=bun:bun /app/apps/api/package.json ./apps/api/package.json
+
+WORKDIR /app/apps/api
 
 # Expose the default Colyseus port
 EXPOSE 2567
 
-# Reset entrypoint and run the binary
-ENTRYPOINT []
-CMD ["./api"]
+# Run the compiled JavaScript
+CMD ["bun", "run", "build/index.js"]
