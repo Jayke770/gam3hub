@@ -9,6 +9,7 @@ module.exports = {
   apps : [{
     name: "colyseus-app",
     script: 'build/index.js',
+    interpreter: 'bun',
     time: true,
     watch: false,
     instances: os.cpus().length,

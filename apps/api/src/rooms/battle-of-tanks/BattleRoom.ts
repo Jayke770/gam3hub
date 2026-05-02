@@ -5,9 +5,9 @@ import {
   BulletState,
   PickableState,
   TeamState,
-} from "./schema/BattleState";
-import { World } from "./game/World";
-import { Block } from "./game/Block";
+} from "./schema/BattleState.js";
+import { World } from "./game/World.js";
+import { Block } from "./game/Block.js";
 
 // ── Level data ──────────────────────────────────────────────
 export const LEVEL: any[] = [
