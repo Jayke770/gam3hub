@@ -244,7 +244,7 @@ export class Game {
           : (TEAM_COLORS[ownerTank.team] || 0xffff66);
       }
 
-      const geo = new THREE.SphereGeometry(isSpecial ? 0.35 : 0.2, 8, 8);
+      const geo = new THREE.SphereGeometry(isSpecial ? 0.45 : 0.3, 8, 8);
       const mat = new THREE.MeshBasicMaterial({ color: bulletColor });
       const mesh = new THREE.Mesh(geo, mat);
       mesh.position.set(bullet.x, 1.5, bullet.y);
@@ -678,6 +678,13 @@ export class Game {
         // Snap toward server-authoritative position
         mesh.position.x = THREE.MathUtils.lerp(mesh.position.x, data._sx, 0.4);
         mesh.position.z = THREE.MathUtils.lerp(mesh.position.z, data._sy, 0.4);
+        
+        // Ensure bullets stay visible above ground height
+        if (this.map) {
+          mesh.position.y = this.map.getGroundHeight(mesh.position.x, mesh.position.z) + 0.8;
+        } else {
+          mesh.position.y = 1.0;
+        }
       }
     }
 

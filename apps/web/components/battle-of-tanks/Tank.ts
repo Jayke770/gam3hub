@@ -171,9 +171,11 @@ export class TankEntity {
         color: TEAM_COLORS[team] || 0xffffff,
         transparent: true,
         opacity: 0.7,
+        polygonOffset: true,
+        polygonOffsetFactor: -4, // Force it to draw above the ground
       })
     );
-    this.teamIndicator.position.y = 0.02;
+    this.teamIndicator.position.y = 0.2;
     this.group.add(this.teamIndicator);
 
     // Health bar (floating above tank, billboard sprites)
