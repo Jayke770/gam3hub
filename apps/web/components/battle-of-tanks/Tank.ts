@@ -96,6 +96,7 @@ export class TankEntity {
   teamIndicator: THREE.Mesh;
   healthBar: THREE.Sprite;
   healthBg: THREE.Sprite;
+  nameLabel: THREE.Sprite;
   shieldBubble: THREE.Mesh;
 
   targetX = 0;
@@ -111,6 +112,7 @@ export class TankEntity {
   explosionTime = 0;
   explosionParts: THREE.Object3D[] = [];
   team = 0;
+  name = "guest";
 
   constructor(team: number) {
     this.team = team;
@@ -169,9 +171,11 @@ export class TankEntity {
         color: TEAM_COLORS[team] || 0xffffff,
         transparent: true,
         opacity: 0.7,
+        polygonOffset: true,
+        polygonOffsetFactor: -4, // Force it to draw above the ground
       })
     );
-    this.teamIndicator.position.y = 0.02;
+    this.teamIndicator.position.y = 0.2;
     this.group.add(this.teamIndicator);
 
     // Health bar (floating above tank, billboard sprites)
@@ -190,6 +194,18 @@ export class TankEntity {
     this.healthBar.scale.set(1.4, 0.15, 1);
     this.healthBar.position.y = 2.2;
     this.group.add(this.healthBar);
+
+    // Name label
+    const nameMat = new THREE.SpriteMaterial({ 
+      transparent: true,
+      depthTest: false,
+      sizeAttenuation: true
+    });
+    this.nameLabel = new THREE.Sprite(nameMat);
+    this.nameLabel.position.y = 2.6; // above health bar
+    this.nameLabel.scale.set(2, 0.5, 1);
+    this.group.add(this.nameLabel);
+    this.setName("guest");
 
     // Shield bubble (translucent cylinder force field)
     const shieldGeo = new THREE.CylinderGeometry(1.4, 1.4, 2.6, 20, 1, true);
@@ -250,7 +266,43 @@ export class TankEntity {
     this.turret.add(barrel);
   }
 
-  update(dt: number) {
+  setName(name: string) {
+    if (this.name === name && (this.nameLabel.material as THREE.SpriteMaterial).map) return;
+    this.name = name;
+    
+    const canvas = document.createElement("canvas");
+    canvas.width = 256;
+    canvas.height = 64;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    // Background bar
+    ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+    ctx.roundRect(10, 10, canvas.width - 20, canvas.height - 20, 10);
+    ctx.fill();
+    
+    ctx.font = "bold 32px monospace";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    
+    const label = name.toUpperCase();
+    
+    // Shadow
+    ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+    ctx.fillText(label, canvas.width / 2 + 2, canvas.height / 2 + 2);
+    
+    // Text
+    ctx.fillStyle = "white";
+    ctx.fillText(label, canvas.width / 2, canvas.height / 2);
+    
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    
+    (this.nameLabel.material as THREE.SpriteMaterial).map = texture;
+    (this.nameLabel.material as THREE.SpriteMaterial).needsUpdate = true;
+  }
+
+  update() {
     // Compute movement delta before lerping
     const moveX = this.targetX - this.group.position.x;
     const moveZ = this.targetZ - this.group.position.z;
@@ -390,6 +442,7 @@ export class TankEntity {
     this.teamIndicator.visible = tankVisible;
     this.healthBar.visible = tankVisible;
     this.healthBg.visible = tankVisible;
+    this.nameLabel.visible = tankVisible;
   }
 
   setDead(val: boolean) {

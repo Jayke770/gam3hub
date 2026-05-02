@@ -13,8 +13,8 @@ export class Network {
     this.client = new Client(serverUrl);
   }
 
-  async connect(): Promise<Room> {
-    this.room = await this.client.joinOrCreate("battleOfTanks");
+  async connect(username?: string): Promise<Room> {
+    this.room = await this.client.joinOrCreate("battleOfTanks", { name: username });
     return this.room;
   }
 
