@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 
 import React, { useEffect, useRef, useState } from "react";
 import { Game } from "./Game";
@@ -79,7 +80,15 @@ export function App() {
           className="bg-black/60 border-white/10 backdrop-blur-xl sm:max-w-md p-8"
           showCloseButton={false}
         >
-          <DialogHeader className="text-center">
+          <DialogHeader className="text-center flex flex-col items-center">
+            <div className="w-32 h-32 relative mb-2">
+              <Image 
+                src="/assets/images/tanks_logo.png" 
+                alt="Battle of Tanks Logo" 
+                fill 
+                className="object-contain" 
+              />
+            </div>
             <DialogTitle className="text-4xl font-black italic tracking-tighter text-transparent bg-clip-text bg-linear-to-br from-white to-white/40">
               BATTLE OF TANKS
             </DialogTitle>
