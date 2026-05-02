@@ -112,7 +112,7 @@ export class Game {
     // Network — allow overriding via ?server=wss://example.com
     const params = new URLSearchParams(window.location.search);
     const serverUrl = params.get("server")
-      || process.env.NEXT_PUBLIC_SERVER_URL
+      || process.env.NEXT_PUBLIC_GAME_SERVER_URL
       || `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.hostname}:2567`;
     console.log("fassfas", serverUrl)
     this.network = new Network(serverUrl);

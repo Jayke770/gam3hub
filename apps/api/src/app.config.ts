@@ -7,23 +7,23 @@ import {
     QueueRoom,
 } from "colyseus";
 import { playground } from "@colyseus/playground";
-import { env } from "./lib/env";
+import { env } from "./lib/env.js";
 import { monitor } from "@colyseus/monitor";
-import { CoinFlip } from "./rooms/coinflip";
+import { CoinFlip } from "./rooms/coinflip.js";
 import { RedisPresence } from "@colyseus/redis-presence";
 import { RedisDriver } from "@colyseus/redis-driver";
 import { BunWebSockets } from "@colyseus/bun-websockets"
 import cors from 'cors'
 import { z } from 'zod'
 import { createPublicClient, http, Hex } from 'viem';
-import { signJoinGame } from "./lib/signJoinGame";
-import { GAM3HUB_ABI } from "./abis/Gam3Hub";
-import { initializeGame } from "./lib/game";
-import { db } from "./models";
-import {  users } from "./models/schema";
+import { signJoinGame } from "./lib/signJoinGame.js";
+import { GAM3HUB_ABI } from "./abis/Gam3Hub.js";
+import { initializeGame } from "./lib/game.js";
+import { db } from "./models/index.js";
+import {  users } from "./models/schema.js";
 import { eq } from "drizzle-orm";
-import { Mines } from "./rooms/mines";
-import { BattleRoom } from "./rooms/battle-of-tanks/BattleRoom";
+import { Mines } from "./rooms/mines.js";
+import { BattleRoom } from "./rooms/battle-of-tanks/BattleRoom.js";
 
 // matchMaker.controller.exposedMethods = ["join", "joinById", "reconnect"]
 
@@ -33,8 +33,8 @@ const publicClient = createPublicClient({
 
 const server = defineServer({
     transport: new BunWebSockets(),
-    // presence: new RedisPresence(env.PRESENCE_REDIS_URL),
-    // driver: new RedisDriver(env.DRIVER_REDIS_URL),
+    presence: env.NODE_ENV === "production" ? new RedisPresence(env.PRESENCE_REDIS_URL) : undefined,
+    driver: env.NODE_ENV === "production" ? new RedisDriver(env.DRIVER_REDIS_URL) : undefined,
     rooms: {
         coinflip: defineRoom(CoinFlip).enableRealtimeListing(),
         mines: defineRoom(Mines).enableRealtimeListing(), 
