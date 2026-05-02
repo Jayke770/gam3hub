@@ -1,4 +1,4 @@
-FROM oven/bun:1.3.10 AS base
+FROM oven/bun:1.3.12 AS base
 WORKDIR /app
 
 FROM base AS prepare
@@ -7,29 +7,33 @@ COPY . .
 RUN turbo prune api --docker
 
 FROM base AS builder
+# Copy json and lockfile first to cache dependencies
 COPY --from=prepare /app/out/json/ .
 COPY --from=prepare /app/out/bun.lock ./bun.lock
-RUN bun install
+RUN bun install --frozen-lockfile
+
+# Copy full source and build
 COPY --from=prepare /app/out/full/ .
 ENV NODE_ENV=production
-RUN bun install
+
+# Re-run install to link workspace packages correctly
+RUN bun install --frozen-lockfile
 
 # Compile the server into a standalone binary
-# Simplified flags to ensure compatibility with all CJS/ESM dependencies
 WORKDIR /app/apps/api
-RUN bun build ./src/index.ts --compile --outfile api
+RUN bun build ./src/index.ts --compile --minify --outfile api
 
 FROM base AS runner
 USER bun
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Copy the stable standalone binary
+# Copy the standalone binary from the builder stage
 COPY --from=builder --chown=bun:bun /app/apps/api/api ./api
 
+# Expose the default Colyseus port
 EXPOSE 2567
-# Reset entrypoint to execute binary directly
-ENTRYPOINT []
 
-# Run the standalone server binary
+# Reset entrypoint and run the binary
+ENTRYPOINT []
 CMD ["./api"]
