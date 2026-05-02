@@ -33,8 +33,8 @@ const publicClient = createPublicClient({
 
 const server = defineServer({
     transport: new BunWebSockets(),
-    // presence: new RedisPresence(env.PRESENCE_REDIS_URL),
-    // driver: new RedisDriver(env.DRIVER_REDIS_URL),
+    presence: env.NODE_ENV === "production" ? new RedisPresence(env.PRESENCE_REDIS_URL) : undefined,
+    driver: env.NODE_ENV === "production" ? new RedisDriver(env.DRIVER_REDIS_URL) : undefined,
     rooms: {
         coinflip: defineRoom(CoinFlip).enableRealtimeListing(),
         mines: defineRoom(Mines).enableRealtimeListing(), 
