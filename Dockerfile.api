@@ -4,7 +4,7 @@ WORKDIR /app
 FROM base AS prepare
 WORKDIR /app
 COPY . .
-# Using bunx ensures we use the correct turbo version without path issues
+# Using bunx ensures we use the correct turbo version
 RUN bunx turbo@2.9.3 prune api --docker
 
 FROM base AS builder
