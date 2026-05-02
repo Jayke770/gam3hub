@@ -119,6 +119,17 @@ export default function DashboardPage() {
               />
             </CarouselItem>
 
+            {/* Tanks Card */}
+            <CarouselItem className="pl-3 md:pl-4 basis-[80%] md:basis-1/2 lg:basis-1/3">
+              <GameCard 
+                title="Battle Of Tanks"
+                description="Tactical tank combat. Destroy opponents, dominate the field."
+                href="/tanks"
+                image="/assets/images/tanks_logo.png"
+                accent="amber"
+              />
+            </CarouselItem>
+
             {/* Placeholder Card 1 */}
             <CarouselItem className="pl-3 md:pl-4 basis-[80%] md:basis-1/2 lg:basis-1/3">
                <div className="h-40 md:h-60 rounded-[24px] md:rounded-[28px] border border-border/50 bg-card/10 flex flex-col items-center justify-center gap-4 glass-morphism grayscale opacity-40">
