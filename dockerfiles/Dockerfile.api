@@ -4,7 +4,7 @@ WORKDIR /app
 FROM base AS prepare
 RUN bun add -g turbo@2.9.3
 COPY . .
-RUN turbo prune server --docker
+RUN turbo prune api --docker
 
 FROM base AS builder
 COPY --from=prepare /app/out/json/ .
@@ -16,8 +16,8 @@ RUN bun install
 
 # Compile the server into a standalone binary
 # Simplified flags to ensure compatibility with all CJS/ESM dependencies
-WORKDIR /app/apps/server
-RUN bun build ./src/index.ts --compile --outfile server
+WORKDIR /app/apps/api
+RUN bun build ./src/index.ts --compile --outfile api
 
 FROM base AS runner
 USER bun
@@ -25,11 +25,11 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 # Copy the stable standalone binary
-COPY --from=builder --chown=bun:bun /app/apps/server/server ./server
+COPY --from=builder --chown=bun:bun /app/apps/api/api ./api
 
 EXPOSE 2567
 # Reset entrypoint to execute binary directly
 ENTRYPOINT []
 
 # Run the standalone server binary
-CMD ["./server"]
+CMD ["./api"]

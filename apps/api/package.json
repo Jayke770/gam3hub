@@ -13,7 +13,7 @@
     "loadtest": "bun run loadtest/example.ts --room my_room --numClients 2",
     "build": "bun run clean && tsc -p tsconfig.build.json",
     "clean": "rimraf build",
-    "start": "bun run build/index.js",
+    "start": "bunx pm2 start ecosystem.config.cjs",
     "test": "mocha -r tsx test/**.test.ts --exit --timeout 15000"
   },
   "author": "",
