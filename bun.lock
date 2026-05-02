@@ -26,7 +26,7 @@
         "@colyseus/redis-driver": "^0.17.7",
         "@colyseus/redis-presence": "^0.17.7",
         "@colyseus/schema": "4.0.0",
-        "@colyseus/tools": "^0.17.0",
+        "@colyseus/tools": "^0.17.19",
         "@initia/initia.js": "^1.0.21",
         "@workspace/shared": "workspace:*",
         "colyseus": "^0.17.8",

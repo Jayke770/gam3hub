@@ -1,14 +1,14 @@
 import { Room, Client, CloseCode, validate, Delayed } from "colyseus";
 import { Bet, ChatMessage, CoinFlipState } from "@workspace/shared/colysues/schema"
-import { db } from "../models";
+import { db } from "../models/index.js";
 import { and, eq, gt, desc, sql } from "drizzle-orm";
-import { bets, games, users } from "../models/schema";
+import { bets, games, users } from "../models/schema.js";
 import { ChatSchema, JoinGameSchema } from "@workspace/shared/colysues/rooms";
 import { createPublicClient, formatEther, Hex, http, isAddress, createWalletClient, keccak256, encodePacked } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import crypto from "crypto";
-import { env } from "../lib/env";
-import { GAM3HUB_ABI } from "../abis/Gam3Hub";
+import { env } from "../lib/env.js";
+import { GAM3HUB_ABI } from "../abis/Gam3Hub.js";
 const publicClient = createPublicClient({
   transport: http(env.RPC_URL)
 });

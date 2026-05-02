@@ -1,10 +1,10 @@
 import { createWalletClient, http, Hex, keccak256, encodePacked, createPublicClient } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { env } from './env';
-import { GAM3HUB_ABI } from '../abis/Gam3Hub';
+import { env } from './env.js';
+import { GAM3HUB_ABI } from '../abis/Gam3Hub.js';
 import crypto from 'crypto';
-import { db } from '../models';
-import { games } from '../models/schema';
+import { db } from '../models/index.js';
+import { games } from '../models/schema.js';
 
 const account = privateKeyToAccount(env.ADMIN_PRIVATE_KEY as Hex);
 

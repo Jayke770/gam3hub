@@ -1,4 +1,4 @@
-import { SpatialItem } from "./World";
+import { SpatialItem } from "./World.js";
 
 export class Block implements SpatialItem {
   x: number;
