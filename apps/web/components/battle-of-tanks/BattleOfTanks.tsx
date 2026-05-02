@@ -8,23 +8,38 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogTrigger,
 } from "@workspace/ui/components/dialog";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
+import { Settings } from "lucide-react";
 
 import { useFullscreen, useToggle } from "react-use";
 
 export function App() {
   const rootRef = useRef<HTMLDivElement>(null);
   const [showFullscreen, toggleFullscreen] = useToggle(false);
+  const [containerElement, setContainerElement] = useState<HTMLElement | null>(null);
+  
   useFullscreen(rootRef as React.RefObject<HTMLDivElement>, showFullscreen, {
     onClose: () => toggleFullscreen(false),
   });
+
+  useEffect(() => {
+    setContainerElement(rootRef.current);
+  }, []);
 
   const gameRef = useRef<Game | null>(null);
   const [username, setUsername] = useState("");
   const [isJoined, setIsJoined] = useState(false);
   const [inputName, setInputName] = useState("");
+  
+  const [showJoystick, setShowJoystick] = useState(() => {
+    if (typeof window !== "undefined" && window.matchMedia("(hover: hover)").matches) {
+      return false;
+    }
+    return true;
+  });
 
   useEffect(() => {
     if (!gameRef.current) {
@@ -108,8 +123,57 @@ export function App() {
         </div>
         <div id="ammo-display" className="absolute bottom-[115px] left-1/2 -translate-x-1/2 text-[12px] text-[#f84]"></div>
         
-        <div id="joystick-left" className="absolute bottom-[20px] left-[20px] w-[150px] h-[150px] z-50 pointer-events-auto [@media(hover:hover)]:hidden"></div>
-        <div id="joystick-right" className="absolute bottom-[20px] right-[20px] w-[150px] h-[150px] z-50 pointer-events-auto [@media(hover:hover)]:hidden"></div>
+        <div id="joystick-left" className={`absolute bottom-[20px] left-[20px] w-[150px] h-[150px] z-50 transition-opacity duration-300 ${!showJoystick ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}></div>
+        <div id="joystick-right" className={`absolute bottom-[20px] right-[20px] w-[150px] h-[150px] z-50 transition-opacity duration-300 ${!showJoystick ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}></div>
+        
+        {/* Settings */}
+        <div className="absolute top-[20px] left-[20px] z-50 pointer-events-auto">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="bg-black/50 border-white/10 backdrop-blur-xs text-white hover:bg-white/10 hover:text-white"
+              >
+                <Settings className="w-5 h-5" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent 
+              container={containerElement}
+              className="bg-black/80 border-white/10 backdrop-blur-md p-6 max-w-sm flex flex-col gap-6 text-white"
+            >
+              <DialogHeader>
+                <DialogTitle className="text-xl font-bold tracking-widest uppercase">Settings</DialogTitle>
+                <DialogDescription className="text-white/40">Adjust your game preferences</DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-white/70 text-sm uppercase tracking-widest">Joystick</span>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className={`h-8 px-4 text-xs transition-colors ${showJoystick ? 'bg-white text-black hover:bg-white/90' : 'bg-transparent text-white hover:bg-white/10'}`}
+                    onClick={() => setShowJoystick(!showJoystick)}
+                  >
+                    {showJoystick ? 'ON' : 'OFF'}
+                  </Button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-white/70 text-sm uppercase tracking-widest">Fullscreen</span>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className={`h-8 px-4 text-xs transition-colors ${showFullscreen ? 'bg-white text-black hover:bg-white/90' : 'bg-transparent text-white hover:bg-white/10'}`}
+                    onClick={() => toggleFullscreen()}
+                  >
+                    {showFullscreen ? 'ON' : 'OFF'}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
         
         <div id="scores" className="absolute top-[20px] right-[20px] text-[13px] leading-none bg-black/50 border border-white/10 rounded-md py-[8px] px-[4px] min-w-[140px] backdrop-blur-xs pointer-events-auto">
           <div id="scores-title" className="text-[10px] uppercase tracking-[2px] text-white/40 text-center pt-[2px] px-0 pb-[6px] border-b border-white/8 mb-[4px]">Leaderboard</div>

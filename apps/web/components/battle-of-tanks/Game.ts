@@ -500,62 +500,59 @@ export class Game {
     });
     window.addEventListener("contextmenu", (e) => e.preventDefault());
 
-    // Mobile joysticks
-    const isMobile = window.matchMedia("(max-width: 767px)").matches || ('ontouchstart' in window);
-    if (isMobile) {
-      const leftZone = document.getElementById("joystick-left");
-      const rightZone = document.getElementById("joystick-right");
-      if (leftZone && rightZone) {
-        import("nipplejs").then((nipplejs) => {
-          // Movement joystick — blue/cyan gradient
-          this.leftJoystickManager = nipplejs.default.create({
-            zone: leftZone,
-            mode: "static",
-            position: { left: "50%", bottom: "50%" },
-            size: 120,
-            color: {
-              front: "linear-gradient(135deg, #818cf8, #38bdf8)",
-              back: "rgba(99, 102, 241, 0.15)",
-            },
-            restOpacity: 0.8,
-          });
-          
-          this.leftJoystickManager.on("move", (evt: any) => {
-            const force = Math.min(evt.data.force, 1);
-            this.joystickRawX = Math.cos(evt.data.angle.radian) * force;
-            this.joystickRawY = -Math.sin(evt.data.angle.radian) * force;
-          });
-          this.leftJoystickManager.on("end", () => {
-            this.joystickRawX = 0;
-            this.joystickRawY = 0;
-          });
-
-          // Aim & shoot joystick — pink/fuchsia gradient
-          this.rightJoystickManager = nipplejs.default.create({
-            zone: rightZone,
-            mode: "static",
-            position: { left: "50%", bottom: "50%" },
-            size: 120,
-            color: {
-              front: "linear-gradient(135deg, #e879f9, #ec4899)",
-              back: "rgba(236, 72, 153, 0.25)",
-            },
-            restOpacity: 0.8,
-          });
-
-          this.rightJoystickManager.on("move", (evt: any) => {
-            const force = Math.min(evt.data.force, 1);
-            this.joystickAimRawX = Math.cos(evt.data.angle.radian) * force;
-            this.joystickAimRawY = -Math.sin(evt.data.angle.radian) * force;
-            this.isJoystickAiming = true;
-            this.network.sendShoot(true);
-          });
-          this.rightJoystickManager.on("end", () => {
-            this.isJoystickAiming = false;
-            this.network.sendShoot(false);
-          });
+    // Mobile joysticks (always init, controlled by UI state instead)
+    const leftZone = document.getElementById("joystick-left");
+    const rightZone = document.getElementById("joystick-right");
+    if (leftZone && rightZone && !this.leftJoystickManager) {
+      import("nipplejs").then((nipplejs) => {
+        // Movement joystick — blue/cyan gradient
+        this.leftJoystickManager = nipplejs.default.create({
+          zone: leftZone,
+          mode: "static",
+          position: { left: "50%", bottom: "50%" },
+          size: 120,
+          color: {
+            front: "linear-gradient(135deg, #818cf8, #38bdf8)",
+            back: "rgba(99, 102, 241, 0.15)",
+          },
+          restOpacity: 0.8,
         });
-      }
+        
+        this.leftJoystickManager.on("move", (evt: any) => {
+          const force = Math.min(evt.data.force, 1);
+          this.joystickRawX = Math.cos(evt.data.angle.radian) * force;
+          this.joystickRawY = -Math.sin(evt.data.angle.radian) * force;
+        });
+        this.leftJoystickManager.on("end", () => {
+          this.joystickRawX = 0;
+          this.joystickRawY = 0;
+        });
+
+        // Aim & shoot joystick — pink/fuchsia gradient
+        this.rightJoystickManager = nipplejs.default.create({
+          zone: rightZone,
+          mode: "static",
+          position: { left: "50%", bottom: "50%" },
+          size: 120,
+          color: {
+            front: "linear-gradient(135deg, #e879f9, #ec4899)",
+            back: "rgba(236, 72, 153, 0.25)",
+          },
+          restOpacity: 0.8,
+        });
+
+        this.rightJoystickManager.on("move", (evt: any) => {
+          const force = Math.min(evt.data.force, 1);
+          this.joystickAimRawX = Math.cos(evt.data.angle.radian) * force;
+          this.joystickAimRawY = -Math.sin(evt.data.angle.radian) * force;
+          this.isJoystickAiming = true;
+          this.network.sendShoot(true);
+        });
+        this.rightJoystickManager.on("end", () => {
+          this.isJoystickAiming = false;
+          this.network.sendShoot(false);
+        });
+      });
     }
   }
 
