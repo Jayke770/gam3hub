@@ -133,6 +133,8 @@ export class MapRenderer {
     const t = Date.now();
     for (let i = 0; i < LEVEL.length; i++) {
       const data = LEVEL[i];
+      if (!data) continue;
+      
       const type = data[4] || 0;
       const mesh = this.blockMeshes[i];
       if (!mesh) continue;
