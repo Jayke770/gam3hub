@@ -260,6 +260,13 @@ export class Game {
       this.scene.add(mesh);
       this.bulletMeshes.set(key, mesh);
 
+      // Pre-calculate velocity for smooth client-side prediction
+      const dx = bullet.tx - bullet.x;
+      const dy = bullet.ty - bullet.y;
+      const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+      (mesh as any)._vx = (dx / dist) * bullet.speed;
+      (mesh as any)._vy = (dy / dist) * bullet.speed;
+
       // Sync to server position on updates
       callbacks.listen(bullet, "x", (val: number) => { (mesh as any)._sx = val; });
       callbacks.listen(bullet, "y", (val: number) => { (mesh as any)._sy = val; });
@@ -510,7 +517,7 @@ export class Game {
               front: "linear-gradient(135deg, #818cf8, #38bdf8)",
               back: "rgba(99, 102, 241, 0.15)",
             },
-            restOpacity: 0.6,
+            restOpacity: 0.8,
           });
           
           this.leftJoystickManager.on("move", (evt: any) => {
@@ -531,9 +538,9 @@ export class Game {
             size: 120,
             color: {
               front: "linear-gradient(135deg, #e879f9, #ec4899)",
-              back: "rgba(236, 72, 153, 0.15)",
+              back: "rgba(236, 72, 153, 0.25)",
             },
-            restOpacity: 0.6,
+            restOpacity: 0.8,
           });
 
           this.rightJoystickManager.on("move", (evt: any) => {
@@ -671,13 +678,22 @@ export class Game {
       group.rotation.y = t;
     }
 
-    // Client-side bullet interpolation — lerp toward server position
+    // Client-side bullet interpolation & prediction
     for (const [, mesh] of this.bulletMeshes) {
       const data = mesh as any;
+      
+      // 1. Local Prediction: Move bullet forward based on its velocity
+      // Server is 20fps, Client is ~60fps. Adjust velocity for frame timing.
+      const stepFactor = 1 / 3; // Approx 20/60
+      if (data._vx !== undefined) {
+        mesh.position.x += data._vx * stepFactor;
+        mesh.position.z += data._vy * stepFactor;
+      }
+
+      // 2. Soft correction toward server-authoritative position
       if (data._sx !== undefined) {
-        // Snap toward server-authoritative position
-        mesh.position.x = THREE.MathUtils.lerp(mesh.position.x, data._sx, 0.4);
-        mesh.position.z = THREE.MathUtils.lerp(mesh.position.z, data._sy, 0.4);
+        mesh.position.x = THREE.MathUtils.lerp(mesh.position.x, data._sx, 0.15);
+        mesh.position.z = THREE.MathUtils.lerp(mesh.position.z, data._sy, 0.15);
         
         // Ensure bullets stay visible above ground height
         if (this.map) {

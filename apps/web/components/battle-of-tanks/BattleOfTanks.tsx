@@ -12,7 +12,15 @@ import {
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 
+import { useFullscreen, useToggle } from "react-use";
+
 export function App() {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [showFullscreen, toggleFullscreen] = useToggle(false);
+  useFullscreen(rootRef as React.RefObject<HTMLDivElement>, showFullscreen, {
+    onClose: () => toggleFullscreen(false),
+  });
+
   const gameRef = useRef<Game | null>(null);
   const [username, setUsername] = useState("");
   const [isJoined, setIsJoined] = useState(false);
@@ -34,6 +42,9 @@ export function App() {
   const handleJoin = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!inputName.trim()) return;
+
+    // Trigger fullscreen via hook
+    toggleFullscreen(true);
     
     setUsername(inputName.trim());
     setIsJoined(true);
@@ -44,7 +55,7 @@ export function App() {
   };
 
   return (
-    <div className="relative w-full h-screen overflow-hidden bg-black font-sans touch-none overscroll-none select-none">
+    <div ref={rootRef} className="fixed inset-0 w-dvw h-dvh overflow-hidden bg-black font-sans touch-none overscroll-none select-none">
       <div id="game-container" className="absolute inset-0"></div>
       
       {/* Shadcn Dialog Login */}
@@ -89,18 +100,18 @@ export function App() {
       <div id="hud" className={`absolute top-0 left-0 w-full h-full pointer-events-none text-white ${!isJoined ? 'opacity-0' : 'opacity-100'} transition-opacity duration-500`}>
         <div id="connect-status" className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[18px] text-[#aaa]">Connecting...</div>
 
-        <div id="health-bar" className="absolute bottom-[30px] left-1/2 -translate-x-1/2 w-[200px] h-[12px] bg-[#333] border border-[#666]">
+        <div id="health-bar" className="absolute bottom-[80px] left-1/2 -translate-x-1/2 w-[200px] h-[12px] bg-[#333] border border-[#666]">
           <div id="health-fill" className="h-full w-full bg-[#4f4] transition-[width] duration-150"></div>
         </div>
-        <div id="shield-bar" className="absolute bottom-[48px] left-1/2 -translate-x-1/2 w-[200px] h-[6px] bg-[#333] border border-[#444]">
+        <div id="shield-bar" className="absolute bottom-[98px] left-1/2 -translate-x-1/2 w-[200px] h-[6px] bg-[#333] border border-[#444]">
           <div id="shield-fill" className="h-full w-0 bg-[#48f] transition-[width] duration-150"></div>
         </div>
-        <div id="ammo-display" className="absolute bottom-[65px] left-1/2 -translate-x-1/2 text-[12px] text-[#f84]"></div>
+        <div id="ammo-display" className="absolute bottom-[115px] left-1/2 -translate-x-1/2 text-[12px] text-[#f84]"></div>
         
-        <div id="joystick-left" className="absolute bottom-[20px] left-[10px] w-[150px] h-[150px] z-50 pointer-events-auto [@media(hover:hover)]:hidden"></div>
-        <div id="joystick-right" className="absolute bottom-[20px] right-[10px] w-[150px] h-[150px] z-50 pointer-events-auto [@media(hover:hover)]:hidden"></div>
+        <div id="joystick-left" className="absolute bottom-[20px] left-[20px] w-[150px] h-[150px] z-50 pointer-events-auto [@media(hover:hover)]:hidden"></div>
+        <div id="joystick-right" className="absolute bottom-[20px] right-[20px] w-[150px] h-[150px] z-50 pointer-events-auto [@media(hover:hover)]:hidden"></div>
         
-        <div id="scores" className="absolute top-[10px] right-[10px] text-[13px] leading-none bg-black/50 border border-white/10 rounded-md py-[8px] px-[4px] min-w-[140px] backdrop-blur-xs pointer-events-auto">
+        <div id="scores" className="absolute top-[20px] right-[20px] text-[13px] leading-none bg-black/50 border border-white/10 rounded-md py-[8px] px-[4px] min-w-[140px] backdrop-blur-xs pointer-events-auto">
           <div id="scores-title" className="text-[10px] uppercase tracking-[2px] text-white/40 text-center pt-[2px] px-0 pb-[6px] border-b border-white/8 mb-[4px]">Leaderboard</div>
           <div id="scores-list" className="relative"></div>
         </div>
