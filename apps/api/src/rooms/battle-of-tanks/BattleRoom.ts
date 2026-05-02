@@ -139,7 +139,7 @@ export class BattleRoom extends Room {
     });
 
     this.onMessage("name", (client, name: string) => {
-      if (typeof name === "string" && /^[a-z0-9\-_]{4,8}$/i.test(name)) {
+      if (typeof name === "string" && name.length >= 2 && name.length <= 16) {
         const tank = this.state.tanks.get(client.sessionId);
         if (tank) tank.name = name;
       }
@@ -150,7 +150,7 @@ export class BattleRoom extends Room {
   }
 
   // ── Join / Leave ──────────────────────────────────────────
-  onJoin(client: Client) {
+  onJoin(client: Client, options: any) {
     const teamId = this.pickWeakestTeam();
     this.state.teams[teamId].tanks++;
 
@@ -161,6 +161,13 @@ export class BattleRoom extends Room {
     tank.died = Date.now();
     tank.respawned = Date.now();
     tank.spawnPosition();
+
+    if (options && typeof options.name === "string") {
+      const sanitized = options.name.trim();
+      if (sanitized.length >= 2 && sanitized.length <= 16) {
+        tank.name = sanitized;
+      }
+    }
 
     this.state.tanks.set(client.sessionId, tank);
     this.world.add("tank", tank);
@@ -333,8 +340,8 @@ export class BattleRoom extends Room {
         const pick = new PickableState();
         pick.id = id;
         pick.type = spawn.type;
-        pick.x = spawn.x;
-        pick.y = spawn.y;
+        pick.x = 10 + Math.random() * 60;
+        pick.y = 10 + Math.random() * 60;
         pick.ind = i;
 
         this.world.add("pickable", pick);
@@ -508,7 +515,6 @@ export class BattleRoom extends Room {
     tank.reloading = true;
     tank.lastShot = Date.now();
 
-    const rad = (-tank.angle + 90) * (Math.PI / 180);
 
     let speed = BULLET_SPEED;
     let damage = BULLET_DAMAGE;
@@ -523,13 +529,18 @@ export class BattleRoom extends Room {
 
     const id = `b${++this.bulletCounter}`;
 
+    const rad = (tank.angle * Math.PI) / 180;
+    const barrelLen = 1.4; // Tip of the barrel offset
+
     const bullet = new BulletState();
     bullet.owner = tank.sessionId;
     bullet.ownerTank = tank;
-    bullet.x = tank.x;
-    bullet.y = tank.y;
-    bullet.tx = Math.cos(rad) * TANK_RANGE + tank.x;
-    bullet.ty = Math.sin(rad) * TANK_RANGE + tank.y;
+    
+    // Spawn at barrel tip, matching client angle convention (sin/cos)
+    bullet.x = tank.x + Math.sin(rad) * barrelLen;
+    bullet.y = tank.y + Math.cos(rad) * barrelLen;
+    bullet.tx = Math.sin(rad) * TANK_RANGE + tank.x;
+    bullet.ty = Math.cos(rad) * TANK_RANGE + tank.y;
     bullet.speed = speed;
     bullet.damage = damage;
     bullet.special = special;

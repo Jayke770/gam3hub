@@ -133,11 +133,11 @@ export class Game {
     window.addEventListener("resize", () => this.onResize());
   }
 
-  async start() {
+  async start(username?: string) {
     await preloadTankModel();
 
     try {
-      this.room = await this.network.connect();
+      this.room = await this.network.connect(username);
       this.mySessionId = this.room.sessionId;
       this.connectStatus.style.display = "none";
       this.bindRoomEvents();
@@ -213,6 +213,10 @@ export class Game {
           this.shieldFill.style.width = `${Math.max(0, val) * 10}%`;
         }
       });
+      callbacks.listen(tank, "name", (val: string) => {
+        entity.setName(val);
+      });
+      entity.setName(tank.name);
       callbacks.listen(tank, "score", (_val: number) => {
         this.updateScores();
       });
@@ -240,7 +244,7 @@ export class Game {
           : (TEAM_COLORS[ownerTank.team] || 0xffff66);
       }
 
-      const geo = new THREE.SphereGeometry(isSpecial ? 0.35 : 0.2, 8, 8);
+      const geo = new THREE.SphereGeometry(isSpecial ? 0.45 : 0.3, 8, 8);
       const mat = new THREE.MeshBasicMaterial({ color: bulletColor });
       const mesh = new THREE.Mesh(geo, mat);
       mesh.position.set(bullet.x, 1.5, bullet.y);
@@ -255,6 +259,13 @@ export class Game {
 
       this.scene.add(mesh);
       this.bulletMeshes.set(key, mesh);
+
+      // Pre-calculate velocity for smooth client-side prediction
+      const dx = bullet.tx - bullet.x;
+      const dy = bullet.ty - bullet.y;
+      const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+      (mesh as any)._vx = (dx / dist) * bullet.speed;
+      (mesh as any)._vy = (dy / dist) * bullet.speed;
 
       // Sync to server position on updates
       callbacks.listen(bullet, "x", (val: number) => { (mesh as any)._sx = val; });
@@ -506,7 +517,7 @@ export class Game {
               front: "linear-gradient(135deg, #818cf8, #38bdf8)",
               back: "rgba(99, 102, 241, 0.15)",
             },
-            restOpacity: 0.6,
+            restOpacity: 0.8,
           });
           
           this.leftJoystickManager.on("move", (evt: any) => {
@@ -527,9 +538,9 @@ export class Game {
             size: 120,
             color: {
               front: "linear-gradient(135deg, #e879f9, #ec4899)",
-              back: "rgba(236, 72, 153, 0.15)",
+              back: "rgba(236, 72, 153, 0.25)",
             },
-            restOpacity: 0.6,
+            restOpacity: 0.8,
           });
 
           this.rightJoystickManager.on("move", (evt: any) => {
@@ -653,7 +664,7 @@ export class Game {
 
     // Update tanks
     for (const [, tank] of this.tanks) {
-      tank.update(0.016);
+      tank.update();
       if (this.map) {
         tank.group.position.y = this.map.getGroundHeight(tank.group.position.x, tank.group.position.z);
       }
@@ -667,13 +678,29 @@ export class Game {
       group.rotation.y = t;
     }
 
-    // Client-side bullet interpolation — lerp toward server position
+    // Client-side bullet interpolation & prediction
     for (const [, mesh] of this.bulletMeshes) {
       const data = mesh as any;
+      
+      // 1. Local Prediction: Move bullet forward based on its velocity
+      // Server is 20fps, Client is ~60fps. Adjust velocity for frame timing.
+      const stepFactor = 1 / 3; // Approx 20/60
+      if (data._vx !== undefined) {
+        mesh.position.x += data._vx * stepFactor;
+        mesh.position.z += data._vy * stepFactor;
+      }
+
+      // 2. Soft correction toward server-authoritative position
       if (data._sx !== undefined) {
-        // Snap toward server-authoritative position
-        mesh.position.x = THREE.MathUtils.lerp(mesh.position.x, data._sx, 0.4);
-        mesh.position.z = THREE.MathUtils.lerp(mesh.position.z, data._sy, 0.4);
+        mesh.position.x = THREE.MathUtils.lerp(mesh.position.x, data._sx, 0.15);
+        mesh.position.z = THREE.MathUtils.lerp(mesh.position.z, data._sy, 0.15);
+        
+        // Ensure bullets stay visible above ground height
+        if (this.map) {
+          mesh.position.y = this.map.getGroundHeight(mesh.position.x, mesh.position.z) + 0.8;
+        } else {
+          mesh.position.y = 1.0;
+        }
       }
     }
 
