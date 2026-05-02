@@ -23,6 +23,7 @@ import { db } from "./models";
 import {  users } from "./models/schema";
 import { eq } from "drizzle-orm";
 import { Mines } from "./rooms/mines";
+import { BattleRoom } from "./rooms/battle-of-tanks/BattleRoom";
 
 // matchMaker.controller.exposedMethods = ["join", "joinById", "reconnect"]
 
@@ -32,11 +33,12 @@ const publicClient = createPublicClient({
 
 const server = defineServer({
     transport: new BunWebSockets(),
-    presence: new RedisPresence(env.PRESENCE_REDIS_URL),
-    driver: new RedisDriver(env.DRIVER_REDIS_URL),
+    // presence: new RedisPresence(env.PRESENCE_REDIS_URL),
+    // driver: new RedisDriver(env.DRIVER_REDIS_URL),
     rooms: {
         coinflip: defineRoom(CoinFlip).enableRealtimeListing(),
         mines: defineRoom(Mines).enableRealtimeListing(), 
+        battleOfTanks: defineRoom(BattleRoom).enableRealtimeListing(),
         queue: defineRoom(QueueRoom, {
             maxPlayers: 2,
             matchRoomName: "mines"
