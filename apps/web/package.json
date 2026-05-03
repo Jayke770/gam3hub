@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
-    "build:itch": "NEXT_PUBLIC_TARGET=ITCH next build",
+    "build:itch": "NEXT_PUBLIC_TARGET=ITCH next build && node fix-paths.js",
     "start": "next start",
     "lint": "eslint",
     "format": "prettier --write \"**/*.{ts,tsx}\"",

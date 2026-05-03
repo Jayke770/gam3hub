@@ -45,6 +45,7 @@ export class Game {
   lastSentDirY = -999;
   lastSentAngle = -999;
   lastTargetSendTime = 0;
+  private destroyed = false;
 
   // Joystick state
   joystickRawX = 0;
@@ -52,7 +53,7 @@ export class Game {
   joystickAimRawX = 0;
   joystickAimRawY = 0;
   isJoystickAiming = false;
-  leftJoystickManager: any = null;
+  leftJoystickManager: any = null; // Keeping as any for now to avoid nipplejs type issues but naming it better
   rightJoystickManager: any = null;
   private initializingJoysticks = false;
   private animationId: number | null = null;
@@ -74,7 +75,7 @@ export class Game {
   pingEl!: HTMLElement;
 
   private lastPingTime = 0;
-  private pingInterval: any = null;
+  private pingInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
     this.scene = new THREE.Scene();
@@ -152,6 +153,7 @@ export class Game {
   }
 
   async start(username?: string) {
+    if (this.room || this.destroyed) return;
     await preloadTankModel();
 
     try {
@@ -175,6 +177,11 @@ export class Game {
     // ── Tanks ──
     callbacks.onAdd("tanks", (tank, key: string) => {
       const entity = new TankEntity(tank.team);
+      const existing = this.tanks.get(key);
+      if (existing) {
+        this.scene.remove(existing.group);
+        existing.dispose();
+      }
       entity.targetX = tank.x;
       entity.targetZ = tank.y;
       entity.group.position.set(tank.x, 0, tank.y);
@@ -498,8 +505,7 @@ export class Game {
   private showDeathScreen() {
     this.deathScreen.classList.remove("exit");
     this.deathScreen.classList.add("ready");
-    // Force reflow
-    const _reflow = this.deathScreen.offsetWidth;
+    this.deathScreen.classList.add("ready");
     this.deathScreen.classList.add("active");
 
     let timeLeft = 3.0;
@@ -580,8 +586,6 @@ export class Game {
     }
 
     this.winnerScreen.classList.add("ready");
-    // Force reflow
-    const _reflowWinner = this.winnerScreen.offsetWidth;
     this.winnerScreen.classList.add("active");
 
     if (isWinner) {
@@ -647,9 +651,16 @@ export class Game {
 
     const leftZone = document.getElementById("joystick-left");
     const rightZone = document.getElementById("joystick-right");
+    
     if (leftZone && rightZone && !this.leftJoystickManager && !this.initializingJoysticks) {
       this.initializingJoysticks = true;
       import("nipplejs").then((nipplejs) => {
+        if (this.destroyed) return;
+        
+        // Final double check of the DOM and manager state
+        if (this.leftJoystickManager) return;
+        
+        // Aggressively clear the zones to ensure no stale joysticks remain
         leftZone.innerHTML = "";
         rightZone.innerHTML = "";
         this.leftJoystickManager = nipplejs.default.create({
@@ -664,7 +675,7 @@ export class Game {
           restOpacity: 0.8,
         });
         
-        this.leftJoystickManager.on("move", (evt: any) => {
+        this.leftJoystickManager.on("move", (evt: { data: { force: number; angle: { radian: number } } }) => {
           const force = Math.min(evt.data.force, 1);
           this.joystickRawX = Math.cos(evt.data.angle.radian) * force;
           this.joystickRawY = -Math.sin(evt.data.angle.radian) * force;
@@ -686,7 +697,7 @@ export class Game {
           restOpacity: 0.8,
         });
 
-        this.rightJoystickManager.on("move", (evt: any) => {
+        this.rightJoystickManager.on("move", (evt: { data: { force: number; angle: { radian: number } } }) => {
           const force = Math.min(evt.data.force, 1);
           this.joystickAimRawX = Math.cos(evt.data.angle.radian) * force;
           this.joystickAimRawY = -Math.sin(evt.data.angle.radian) * force;
@@ -704,6 +715,7 @@ export class Game {
   }
 
   public destroy() {
+    this.destroyed = true;
     if (this.animationId !== null) {
       cancelAnimationFrame(this.animationId);
     }
