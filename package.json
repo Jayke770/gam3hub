@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "build": "turbo build",
+    "build:itch": "turbo build:itch && (cd apps/web/out && (rm -rf next || true) && mv _next next && find . -type f \\( -name \"*.html\" -o -name \"*.js\" -o -name \"*.css\" \\) -exec sed -i '' 's|/_next/|next/|g' {} + && find . -type f \\( -name \"*.html\" -o -name \"*.js\" -o -name \"*.css\" \\) -exec sed -i '' 's|/next/|next/|g' {} + && find . -type f \\( -name \"*.html\" -o -name \"*.js\" \\) -exec sed -i '' 's|/assets/|assets/|g' {} + && find . -type f \\( -name \"*.html\" -o -name \"*.js\" \\) -exec sed -i '' 's|/battle-of-tanks/|battle-of-tanks/|g' {} + && find . -type f \\( -name \"*.html\" -o -name \"*.js\" \\) -exec sed -i '' 's|/logo.png|logo.png|g' {} + && find . -type f \\( -name \"*.html\" -o -name \"*.js\" \\) -exec sed -i '' 's|/manifest.json|manifest.json|g' {} + && find . -type f \\( -name \"*.html\" -o -name \"*.js\" \\) -exec sed -i '' 's|/favicon.ico|favicon.ico|g' {} + && zip -r ../../../itch-tanks.zip .)",
     "dev": "turbo dev",
     "lint": "turbo lint",
     "format": "turbo format",
