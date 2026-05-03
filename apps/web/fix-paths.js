@@ -15,7 +15,6 @@ function walk(dir, callback) {
   });
 }
 
-
 console.log('Aggressively fixing paths for Itch.io deployment...');
 
 // Rename _next folder to next

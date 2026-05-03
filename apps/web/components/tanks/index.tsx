@@ -72,15 +72,17 @@ export function App() {
     const game = new Game();
     gameRef.current = game;
 
-    if (isJoined && username && autoJoin) {
-      game.start(username);
-    }
-
     return () => {
       game.destroy();
       gameRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    if (gameRef.current && isJoined && username && autoJoin) {
+      gameRef.current.start(username);
+    }
+  }, [isJoined, username, autoJoin]);
 
   const handleJoin = (e?: React.FormEvent) => {
     e?.preventDefault();

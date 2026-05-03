@@ -21,6 +21,7 @@ export class Network {
   sendTarget(angle: number) {
     this.room?.send("target", angle);
   }
+  
 
   sendShoot(shooting: boolean) {
     this.room?.send("shoot", shooting);
