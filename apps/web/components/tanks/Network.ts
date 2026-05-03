@@ -29,4 +29,8 @@ export class Network {
   sendName(name: string) {
     this.room?.send("name", name);
   }
+
+  disconnect() {
+    this.room?.leave();
+  }
 }

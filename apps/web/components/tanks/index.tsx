@@ -75,6 +75,11 @@ export function App() {
     if (isJoined && username && autoJoin) {
       game.start(username);
     }
+
+    return () => {
+      game.destroy();
+      gameRef.current = null;
+    };
   }, []);
 
   const handleJoin = (e?: React.FormEvent) => {
