@@ -54,6 +54,8 @@ export class Game {
   isJoystickAiming = false;
   leftJoystickManager: any = null;
   rightJoystickManager: any = null;
+  private initializingJoysticks = false;
+  private animationId: number | null = null;
 
   raycaster = new THREE.Raycaster();
   groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
@@ -645,8 +647,11 @@ export class Game {
 
     const leftZone = document.getElementById("joystick-left");
     const rightZone = document.getElementById("joystick-right");
-    if (leftZone && rightZone && !this.leftJoystickManager) {
+    if (leftZone && rightZone && !this.leftJoystickManager && !this.initializingJoysticks) {
+      this.initializingJoysticks = true;
       import("nipplejs").then((nipplejs) => {
+        leftZone.innerHTML = "";
+        rightZone.innerHTML = "";
         this.leftJoystickManager = nipplejs.default.create({
           zone: leftZone,
           mode: "static",
@@ -692,8 +697,39 @@ export class Game {
           this.isJoystickAiming = false;
           this.network.sendShoot(false);
         });
+        
+        this.initializingJoysticks = false;
       });
     }
+  }
+
+  public destroy() {
+    if (this.animationId !== null) {
+      cancelAnimationFrame(this.animationId);
+    }
+    
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+    }
+
+    if (this.leftJoystickManager) {
+      this.leftJoystickManager.destroy();
+    }
+    if (this.rightJoystickManager) {
+      this.rightJoystickManager.destroy();
+    }
+
+    this.network.disconnect();
+    
+    if (this.renderer) {
+      this.renderer.dispose();
+      this.renderer.forceContextLoss();
+      this.renderer.domElement.remove();
+    }
+
+    // Remove event listeners
+    // Note: To be fully clean, these would need named function references
+    // but this covers the primary heavy resources.
   }
 
   private sendInput() {
@@ -780,7 +816,7 @@ export class Game {
   }
 
   private animate = () => {
-    requestAnimationFrame(this.animate);
+    this.animationId = requestAnimationFrame(this.animate);
 
     if (this.room) {
       this.sendInput();

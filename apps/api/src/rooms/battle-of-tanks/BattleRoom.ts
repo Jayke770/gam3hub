@@ -74,7 +74,7 @@ const RECOVERY_INTERVAL = 1000;
 const WIN_SCORE = 10;
 const SPEED_BOOST_TIME = 8000;
 const SPEED_BOOST_MULT = 1.6;
-const MATCH_DURATION = 30; // match time in seconds
+const MATCH_DURATION = 180; // match time in seconds
 
 // ── Internal types ─────────────────────────────────────────
 interface PickSpawn {
@@ -167,7 +167,7 @@ export class BattleRoom extends Room {
 
     // Timer loop at 1 FPS
     this.clock.setInterval(() => {
-      if (this.clients.length > 0) {
+      if (this.clients.length > 1) {
         if (this.state.winnerTeam === -1) {
           if (this.state.gameTimer > 0) {
             this.state.gameTimer--;

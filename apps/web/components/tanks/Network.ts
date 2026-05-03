@@ -21,6 +21,7 @@ export class Network {
   sendTarget(angle: number) {
     this.room?.send("target", angle);
   }
+  
 
   sendShoot(shooting: boolean) {
     this.room?.send("shoot", shooting);
@@ -28,5 +29,9 @@ export class Network {
 
   sendName(name: string) {
     this.room?.send("name", name);
+  }
+
+  disconnect() {
+    this.room?.leave();
   }
 }
