@@ -26,6 +26,7 @@
     "@vercel/analytics": "^2.0.1",
     "@workspace/shared": "workspace:*",
     "@workspace/ui": "workspace:*",
+    "canvas-confetti": "^1.9.4",
     "date-fns": "^4.1.0",
     "howler": "^2.2.4",
     "lucide-react": "^1.7.0",
