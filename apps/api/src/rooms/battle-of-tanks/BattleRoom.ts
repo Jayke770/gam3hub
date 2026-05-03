@@ -47,6 +47,15 @@ const PICKABLE_SPAWNS = [
   { x: 58, y: 58, type: "damage", delay: 10000 },
   { x: 22, y: 58, type: "damage", delay: 10000 },
   { x: 40, y: 40, type: "shield", delay: 30000 },
+  // Increased speed items and randomized positions
+  { x: 10, y: 10, type: "speed", delay: 10000 },
+  { x: 70, y: 70, type: "speed", delay: 10000 },
+  { x: 10, y: 70, type: "speed", delay: 10000 },
+  { x: 70, y: 10, type: "speed", delay: 10000 },
+  { x: 40, y: 25, type: "speed", delay: 10000 },
+  { x: 40, y: 55, type: "speed", delay: 10000 },
+  { x: 20, y: 20, type: "speed", delay: 10000 },
+  { x: 60, y: 60, type: "speed", delay: 10000 },
 ];
 
 // ── Constants ───────────────────────────────────────────────
@@ -63,6 +72,9 @@ const RELOAD_TIME = 400;
 const RECOVERY_DELAY = 3000;
 const RECOVERY_INTERVAL = 1000;
 const WIN_SCORE = 10;
+const SPEED_BOOST_TIME = 8000;
+const SPEED_BOOST_MULT = 1.6;
+const MATCH_DURATION = 30; // match time in seconds
 
 // ── Internal types ─────────────────────────────────────────
 interface PickSpawn {
@@ -86,12 +98,13 @@ export class BattleRoom extends Room {
   private pickCounter = 0;
 
   onCreate() {
+    this.autoDispose = false;
+    this.state.gameTimer = MATCH_DURATION;
     // 4 teams
     for (let i = 0; i < 4; i++) {
       this.state.teams.push(new TeamState());
     }
 
-    // Spatial world
     // Spatial world
     this.world = new World(80, 80, 4, [
       "tank",
@@ -145,8 +158,30 @@ export class BattleRoom extends Room {
       }
     });
 
+    this.onMessage("ping", (client) => {
+      client.send("pong");
+    });
+
     // Game loop at 20 FPS
     this.setSimulationInterval(() => this.update(), 1000 / 20);
+
+    // Timer loop at 1 FPS
+    this.clock.setInterval(() => {
+      if (this.clients.length > 0) {
+        if (this.state.winnerTeam === -1) {
+          if (this.state.gameTimer > 0) {
+            this.state.gameTimer--;
+            if (this.state.gameTimer === 0) {
+              this.settleByTimer();
+            }
+          }
+        } else {
+          if (this.state.nextRoundTimer > 0) {
+            this.state.nextRoundTimer--;
+          }
+        }
+      }
+    }, 1000);
   }
 
   // ── Join / Leave ──────────────────────────────────────────
@@ -226,8 +261,12 @@ export class BattleRoom extends Room {
           tank.dirX * tank.dirX + tank.dirY * tank.dirY
         );
         if (len > 0) {
-          tank.x += (tank.dirX / len) * TANK_SPEED;
-          tank.y += (tank.dirY / len) * TANK_SPEED;
+          let speed = TANK_SPEED;
+          if (now < tank.tSpeedBoost) {
+            speed *= SPEED_BOOST_MULT;
+          }
+          tank.x += (tank.dirX / len) * speed;
+          tank.y += (tank.dirY / len) * speed;
         }
 
         // Reloading
@@ -301,6 +340,9 @@ export class BattleRoom extends Room {
                 if (tank.shield >= 10) return;
                 tank.shield = 10;
                 break;
+              case "speed":
+                tank.tSpeedBoost = now + SPEED_BOOST_TIME;
+                break;
             }
 
             this.world.remove("pickable", pick);
@@ -311,8 +353,8 @@ export class BattleRoom extends Room {
           null
         );
       } else {
-        // Dead — respawn after delay
-        if (now - tank.died > RESPAWN_TIME) {
+        // Dead — respawn after delay, but only if no winner is active
+        if (this.state.winnerTeam === -1 && now - tank.died > RESPAWN_TIME) {
           tank.dead = false;
           tank.hp = 10;
           tank.shield = 0;
@@ -340,8 +382,9 @@ export class BattleRoom extends Room {
         const pick = new PickableState();
         pick.id = id;
         pick.type = spawn.type;
-        pick.x = 10 + Math.random() * 60;
-        pick.y = 10 + Math.random() * 60;
+        // Randomize position across the map
+        pick.x = 5 + Math.random() * 70;
+        pick.y = 5 + Math.random() * 70;
         pick.ind = i;
 
         this.world.add("pickable", pick);
@@ -431,6 +474,15 @@ export class BattleRoom extends Room {
                   }
                   this.state.totalScore++;
                   tank.killer = bullet.owner;
+
+                  // Broadcast kill
+                  this.broadcast("kill", {
+                    killer: bullet.ownerTank.name,
+                    victim: tank.name,
+                    killerTeam: bullet.ownerTank.team,
+                    victimTeam: tank.team
+                  });
+
                   // Respawn tank
                   tank.dead = true;
                   tank.died = now;
@@ -485,28 +537,61 @@ export class BattleRoom extends Room {
 
     // ── Winner? ──
     if (winner !== null) {
-      this.state.winnerTeam = winner;
+      this.handleWinner(winner);
+    }
+  }
 
-      // Reset
+  private settleByTimer() {
+    let bestTeam = 0;
+    let maxScore = -1;
+    let teamsAtMax = 0;
+
+    for (let i = 0; i < 4; i++) {
+      if (this.state.teams[i].score > maxScore) {
+        maxScore = this.state.teams[i].score;
+        bestTeam = i;
+        teamsAtMax = 1;
+      } else if (this.state.teams[i].score === maxScore && maxScore !== -1) {
+        teamsAtMax++;
+      }
+    }
+
+    // If maxScore is 0 or multiple teams have the same max score, it's a draw
+    if (maxScore <= 0 || teamsAtMax > 1) {
+      this.handleWinner(-2);
+    } else {
+      this.handleWinner(bestTeam);
+    }
+  }
+
+  private handleWinner(teamId: number) {
+    this.state.winnerTeam = teamId;
+    this.state.nextRoundTimer = 10;
+
+    // Immediately "kill" everyone to stop movement/shooting
+    const now = Date.now();
+    for (const [, tank] of this.state.tanks) {
+      if (!tank.dead) {
+        tank.dead = true;
+        tank.died = now;
+        tank.shooting = false;
+      }
+    }
+
+    // 30s intermission before next round
+    this.clock.setTimeout(() => {
+      // Reset scores and timer
       for (let i = 0; i < 4; i++) {
         this.state.teams[i].score = 0;
       }
       for (const [, tank] of this.state.tanks) {
         tank.score = 0;
         tank.killer = "";
-        if (!tank.dead) {
-          tank.dead = true;
-          tank.died = now;
-          tank.shooting = false;
-        }
       }
       this.state.totalScore = 0;
-
-      // Clear winner after a brief moment (clients can read it)
-      setTimeout(() => {
-        this.state.winnerTeam = -1;
-      }, 3000);
-    }
+      this.state.gameTimer = MATCH_DURATION;
+      this.state.winnerTeam = -1;
+    }, 10000);
   }
 
   // ── Create bullet ─────────────────────────────────────────
@@ -514,7 +599,6 @@ export class BattleRoom extends Room {
     tank.tHit = Date.now();
     tank.reloading = true;
     tank.lastShot = Date.now();
-
 
     let speed = BULLET_SPEED;
     let damage = BULLET_DAMAGE;

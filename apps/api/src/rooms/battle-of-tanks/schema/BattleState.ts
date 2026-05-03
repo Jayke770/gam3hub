@@ -25,6 +25,7 @@ export class TankState extends Schema {
   ammo: number = 0;
   died: number = 0;
   respawned: number = 0;
+  @type("number") tSpeedBoost: number = 0;
   deleted: boolean = false;
   node: any = null;
 
@@ -69,6 +70,8 @@ export class TeamState extends Schema {
 }
 
 export class BattleState extends Schema {
+  @type("uint16") gameTimer: number = 180;
+  @type("uint8") nextRoundTimer: number = 0;
   @type("uint16") totalScore: number = 0;
   @type("int8") winnerTeam: number = -1;
   @type([TeamState]) teams = new ArraySchema<TeamState>();

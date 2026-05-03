@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "build": "turbo build",
+    "build:itch": "turbo build:itch && (cd apps/web/out && mv _next next && grep -rl '_next' . | xargs sed -i '' 's/_next/next/g' && zip -r ../../../itch-tanks.zip .)",
     "dev": "turbo dev",
     "lint": "turbo lint",
     "format": "turbo format",
