@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 
 const BattleOfTanks = dynamic(
-  () => import("@/components/battle-of-tanks/BattleOfTanks").then((mod) => mod.App),
+  () => import("@/components/tanks").then((mod) => mod.App),
   { ssr: false }
 );
 
